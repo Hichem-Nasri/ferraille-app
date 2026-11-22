@@ -83,13 +83,18 @@ import { PartIconComponent } from '../shared/part-icon.component';
         <legend class="section-title">Paiement</legend>
         <div class="grid-3">
           @for (m of methods; track m.value) {
-            <label class="method" [class.selected]="paymentMethod() === m.value">
-              <input type="radio" name="payment" class="sr-only" [value]="m.value" [checked]="paymentMethod() === m.value" (change)="selectMethod(m.value)">
+            <label class="method" [class.selected]="paymentMethod() === m.value" [class.disabled]="!isEnabled(m.value)">
+              <input type="radio" name="payment" class="sr-only" [value]="m.value" [checked]="paymentMethod() === m.value"
+                     [disabled]="!isEnabled(m.value)" (change)="selectMethod(m.value)">
               <fr-icon [name]="m.icon" />
               {{ m.label }}
+              @if (!isEnabled(m.value)) { <span class="soon">Bientôt</span> }
             </label>
           }
         </div>
+        @if (paymentMethod() === 'A_LA_LIVRAISON') {
+          <span class="muted small">Tu paies en espèces au livreur. Vérifie la pièce à la réception avant de confirmer.</span>
+        }
       </fieldset>
 
       @if (quote(); as q) {
@@ -141,6 +146,8 @@ import { PartIconComponent } from '../shared/part-icon.component';
     .method { height: 64px; border-radius: 14px; background: var(--white); border: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--green); position: relative; }
     .method.selected { background: var(--forest); border-color: var(--forest); color: var(--white); }
     .method.selected fr-icon { color: var(--lime); }
+    .method.disabled { opacity: 0.5; cursor: not-allowed; border-style: dashed; }
+    .soon { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
     .summary { gap: 8px; padding: 16px; }
     .total-label { font-size: 15px; font-weight: 700; }
     .total { font-size: 22px; }
@@ -168,7 +175,8 @@ export class CheckoutPage implements OnInit {
   readonly listing = signal<ListingDetail | null>(null);
   readonly carriers = signal<CarrierOption[]>([]);
   readonly carrier = signal<Carrier>('ARAMEX');
-  readonly paymentMethod = signal<PaymentMethod>('CARTE');
+  readonly paymentMethod = signal<PaymentMethod>('A_LA_LIVRAISON');
+  readonly enabledMethods = signal<PaymentMethod[]>(['A_LA_LIVRAISON']);
   readonly quote = signal<CheckoutQuote | null>(null);
   readonly paying = signal(false);
   readonly error = signal<string | null>(null);
@@ -205,6 +213,14 @@ export class CheckoutPage implements OnInit {
       },
       error: (e) => this.error.set(errorMessage(e)),
     });
+    this.api.paymentMethods().subscribe((methods) => {
+      if (methods.length) {
+        this.enabledMethods.set(methods);
+        if (!methods.includes(this.paymentMethod())) {
+          this.selectMethod(methods[0]);
+        }
+      }
+    });
     this.api.shippingOptions().subscribe((options) => {
       this.carriers.set(options);
       if (options.length && !options.some((o) => o.carrier === this.carrier())) {
@@ -217,6 +233,10 @@ export class CheckoutPage implements OnInit {
   selectCarrier(carrier: Carrier): void {
     this.carrier.set(carrier);
     this.refreshQuote();
+  }
+
+  isEnabled(method: PaymentMethod): boolean {
+    return this.enabledMethods().includes(method);
   }
 
   selectMethod(method: PaymentMethod): void {

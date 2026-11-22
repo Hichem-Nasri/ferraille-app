@@ -48,6 +48,33 @@ public class AuthService {
         return new AuthResponse(jwtService.generate(user), UserResponse.from(user));
     }
 
+    @Transactional
+    public UserResponse updateProfile(Long userId, AuthDtos.ProfileRequest request) {
+        if (request.sellerType() == SellerType.PRO && (request.shopName() == null || request.shopName().isBlank())) {
+            throw ApiException.badRequest("Le nom de la casse est obligatoire pour un compte pro");
+        }
+        User user = require(userId);
+        user.setFullName(request.fullName().trim());
+        user.setPhone(blankToNull(request.phone()));
+        user.setCity(blankToNull(request.city()));
+        user.setSellerType(request.sellerType());
+        user.setShopName(request.sellerType() == SellerType.PRO ? request.shopName().trim() : null);
+        return UserResponse.from(user);
+    }
+
+    @Transactional
+    public void changePassword(Long userId, AuthDtos.PasswordRequest request) {
+        User user = require(userId);
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw ApiException.badRequest("Mot de passe actuel incorrect");
+        }
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
     @Transactional(readOnly = true)
     public User require(Long id) {
         return userRepository.findById(id).orElseThrow(() -> ApiException.notFound("Utilisateur introuvable"));

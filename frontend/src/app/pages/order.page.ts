@@ -15,6 +15,8 @@ interface Step {
   state: 'done' | 'current' | 'todo';
 }
 
+type ActionKey = 'ship' | 'confirm' | 'cancel' | 'dispute' | 'transit' | 'delivered';
+
 const FLOW: OrderStatus[] = ['PAID', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'COMPLETED'];
 
 @Component({
@@ -76,7 +78,11 @@ const FLOW: OrderStatus[] = ['PAID', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'COMP
         @if (o.viewerIsBuyer && ['PAID', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED'].includes(o.status)) {
           <div class="notice">
             <fr-icon name="shield" [size]="22" />
-            <span>Tes <strong>{{ o.total | dinar }}</strong> sont protégés par Ferraille. Si la pièce n'est pas conforme, tu es remboursé.</span>
+            @if (o.paymentMethod === 'A_LA_LIVRAISON') {
+              <span>Tu paieras <strong>{{ o.total | dinar }}</strong> en espèces au livreur. Vérifie la pièce avant de confirmer la réception.</span>
+            } @else {
+              <span>Tes <strong>{{ o.total | dinar }}</strong> sont protégés par Ferraille. Si la pièce n'est pas conforme, tu es remboursé.</span>
+            }
           </div>
         }
 
@@ -211,7 +217,7 @@ export class OrderPage implements OnInit {
     const buyer = o.viewerIsBuyer;
     switch (o.status) {
       case 'PAID':
-        return buyer ? 'Le vendeur prépare ton colis' : 'Une pièce à expédier !';
+        return buyer ? 'Commande confirmée, le vendeur prépare ton colis' : 'Une pièce à expédier !';
       case 'SHIPPED':
         return `Colis pris en charge par ${o.carrierLabel}`;
       case 'IN_TRANSIT':
@@ -268,10 +274,16 @@ export class OrderPage implements OnInit {
     if (!o) {
       return [];
     }
-    const list: { key: 'ship' | 'confirm' | 'cancel' | 'dispute'; label: string; style: string }[] = [];
+    const list: { key: ActionKey; label: string; style: string }[] = [];
     if (o.viewerIsSeller && o.status === 'PAID') {
       list.push({ key: 'cancel', label: 'Annuler', style: 'btn-ghost' });
       list.push({ key: 'ship', label: 'Expédier', style: 'btn-primary' });
+    }
+    if (o.viewerIsSeller && o.status === 'SHIPPED') {
+      list.push({ key: 'transit', label: 'Marquer en transit', style: 'btn-ghost' });
+    }
+    if (o.viewerIsSeller && ['SHIPPED', 'IN_TRANSIT'].includes(o.status)) {
+      list.push({ key: 'delivered', label: 'Marquer livrée', style: 'btn-primary' });
     }
     if (o.viewerIsBuyer && o.status === 'PAID') {
       list.push({ key: 'cancel', label: 'Annuler la commande', style: 'btn-ghost' });
@@ -298,7 +310,11 @@ export class OrderPage implements OnInit {
     return PAYMENT_LABELS[o.paymentMethod];
   }
 
-  run(key: 'ship' | 'confirm' | 'cancel' | 'dispute'): void {
+  run(key: ActionKey): void {
+    if (key === 'transit' || key === 'delivered') {
+      this.execute(this.api.deliveryStatus(Number(this.id), key === 'transit' ? 'IN_TRANSIT' : 'DELIVERED'));
+      return;
+    }
     if (key === 'dispute') {
       this.disputeOpen.set(true);
       return;

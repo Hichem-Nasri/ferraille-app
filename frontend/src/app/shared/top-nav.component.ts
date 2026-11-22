@@ -21,7 +21,8 @@ import { PartIconComponent } from './part-icon.component';
           @if (auth.isLoggedIn()) {
             <a routerLink="/commandes" routerLinkActive="active">Commandes</a>
             <a routerLink="/mes-annonces" routerLinkActive="active">Mes annonces</a>
-            <a routerLink="/portefeuille" routerLinkActive="active" class="profile">
+            <a routerLink="/portefeuille" routerLinkActive="active">Portefeuille</a>
+            <a routerLink="/profil" routerLinkActive="active" class="profile">
               <fr-icon name="user" [size]="18" />{{ auth.user()?.displayName }}
             </a>
           } @else {

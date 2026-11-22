@@ -49,6 +49,9 @@ public class OrderService {
     private final WalletService walletService;
     private final FerrailleProperties properties;
 
+    @org.springframework.beans.factory.annotation.Value("#{'${ferraille.payment-methods:A_LA_LIVRAISON}'.split(',')}")
+    private List<PaymentMethod> enabledPaymentMethods;
+
     @Transactional
     public OrderDetail create(Long buyerId, CreateOrderRequest request) {
         User buyer = userRepository.findById(buyerId).orElseThrow(() -> ApiException.notFound("Utilisateur introuvable"));
@@ -60,6 +63,9 @@ public class OrderService {
             throw ApiException.badRequest("Tu ne peux pas acheter ta propre annonce");
         }
 
+        if (!enabledPaymentMethods.contains(request.paymentMethod())) {
+            throw ApiException.badRequest("Ce moyen de paiement n'est pas encore disponible : choisis le paiement à la livraison");
+        }
         CheckoutQuote quote = pricingService.checkoutQuote(listing.getPrice(), request.carrier(), request.paymentMethod());
         String reference = newReference();
         PaymentResult payment = paymentGateway.authorize(reference, request.paymentMethod(), quote.total());
@@ -121,6 +127,16 @@ public class OrderService {
     }
 
     @Transactional
+    public OrderDetail sellerDeliveryUpdate(Long sellerId, Long orderId, OrderStatus status) {
+        Order order = require(orderId);
+        if (!order.getSeller().getId().equals(sellerId)) {
+            throw ApiException.forbidden("Cette commande ne t'appartient pas");
+        }
+        updateDeliveryStatus(orderId, status, null);
+        return toDetail(order, sellerId, false);
+    }
+
+    @Transactional
     public OrderDetail updateDeliveryStatus(Long orderId, OrderStatus status, String location) {
         Order order = require(orderId);
         if (status != OrderStatus.IN_TRANSIT && status != OrderStatus.DELIVERED) {
@@ -132,7 +148,9 @@ public class OrderService {
         order.setStatus(status);
         if (status == OrderStatus.DELIVERED) {
             order.setDeliveredAt(Instant.now());
-            addEvent(order, status, "Colis livré", location != null ? location : order.getShipCity());
+            addEvent(order, status, order.getPaymentMethod() == PaymentMethod.A_LA_LIVRAISON
+                    ? "Colis livré · paiement encaissé par le livreur" : "Colis livré",
+                    location != null ? location : order.getShipCity());
         } else {
             addEvent(order, status, "En route vers " + order.getShipCity(), location);
         }

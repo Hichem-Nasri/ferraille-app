@@ -36,6 +36,7 @@ ferraille:
   commission-rate: ${COMMISSION_RATE:0.10}
   protection-fee: ${PROTECTION_FEE:4.000}
   cash-on-delivery-fee: ${COD_FEE:2.000}
+  payment-methods: ${PAYMENT_METHODS:A_LA_LIVRAISON}
   auto-confirm-hours: ${AUTO_CONFIRM_HOURS:48}
   upload-dir: ${UPLOAD_DIR:./uploads}
   demo-data: ${DEMO_DATA:false}

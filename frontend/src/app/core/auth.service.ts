@@ -36,6 +36,11 @@ export class AuthService {
     return this.http.post<AuthResponse>('/api/auth/register', payload).pipe(tap((r) => this.store(r)));
   }
 
+  setUser(user: User): void {
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    this.currentUser.set(user);
+  }
+
   logout(): void {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);

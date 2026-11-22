@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,6 +31,19 @@ public class AuthController {
     @PostMapping("/api/auth/login")
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request);
+    }
+
+    @PutMapping("/api/me")
+    public UserResponse updateProfile(@AuthenticationPrincipal AuthenticatedUser principal,
+                                      @Valid @RequestBody AuthDtos.ProfileRequest request) {
+        return authService.updateProfile(principal.id(), request);
+    }
+
+    @PutMapping("/api/me/password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void changePassword(@AuthenticationPrincipal AuthenticatedUser principal,
+                               @Valid @RequestBody AuthDtos.PasswordRequest request) {
+        authService.changePassword(principal.id(), request);
     }
 
     @GetMapping("/api/me")

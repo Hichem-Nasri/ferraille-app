@@ -14,5 +14,6 @@ export const routes: Routes = [
   { path: 'commandes/:id', data: { title: "Suivi de commande", noindex: true }, canActivate: [authGuard], loadComponent: () => import('./pages/order.page').then((m) => m.OrderPage) },
   { path: 'mes-annonces', data: { title: "Mes annonces", noindex: true }, canActivate: [authGuard], loadComponent: () => import('./pages/my-listings.page').then((m) => m.MyListingsPage) },
   { path: 'portefeuille', data: { title: "Mon portefeuille", noindex: true }, canActivate: [authGuard], loadComponent: () => import('./pages/wallet.page').then((m) => m.WalletPage) },
+  { path: 'profil', data: { title: 'Mon profil', noindex: true }, canActivate: [authGuard], loadComponent: () => import('./pages/profile.page').then((m) => m.ProfilePage) },
   { path: '**', redirectTo: '' },
 ];

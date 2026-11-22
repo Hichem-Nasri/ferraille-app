@@ -50,6 +50,12 @@ public class OrderController {
         return orderService.ship(user.id(), id);
     }
 
+    @PostMapping("/{id}/delivery-status")
+    public OrderDetail deliveryStatus(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable Long id,
+                                      @Valid @RequestBody OrderDtos.StatusUpdateRequest request) {
+        return orderService.sellerDeliveryUpdate(user.id(), id, request.status());
+    }
+
     @PostMapping("/{id}/confirm")
     public OrderDetail confirm(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable Long id) {
         return orderService.confirm(user.id(), id);

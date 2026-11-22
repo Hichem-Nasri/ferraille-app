@@ -18,6 +18,14 @@ public class PricingController {
     private final PricingService pricingService;
     private final ListingRepository listingRepository;
 
+    @org.springframework.beans.factory.annotation.Value("#{'${ferraille.payment-methods:A_LA_LIVRAISON}'.split(',')}")
+    private java.util.List<PaymentMethod> enabledPaymentMethods;
+
+    @GetMapping("/api/pricing/payment-methods")
+    public java.util.List<PaymentMethod> paymentMethods() {
+        return enabledPaymentMethods;
+    }
+
     @GetMapping("/api/pricing/seller")
     public PricingService.SellerQuote seller(@RequestParam BigDecimal price) {
         if (price.signum() <= 0) {
@@ -29,7 +37,7 @@ public class PricingController {
     @GetMapping("/api/pricing/checkout")
     public PricingService.CheckoutQuote checkout(@RequestParam Long listingId,
                                                  @RequestParam Carrier carrier,
-                                                 @RequestParam(defaultValue = "CARTE") PaymentMethod paymentMethod) {
+                                                 @RequestParam(defaultValue = "A_LA_LIVRAISON") PaymentMethod paymentMethod) {
         BigDecimal price = listingRepository.findById(listingId)
                 .orElseThrow(() -> ApiException.notFound("Annonce introuvable"))
                 .getPrice();

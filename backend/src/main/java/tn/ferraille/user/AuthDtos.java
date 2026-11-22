@@ -20,6 +20,18 @@ public final class AuthDtos {
             @Size(max = 120) String shopName) {
     }
 
+    public record ProfileRequest(
+            @NotBlank @Size(max = 120) String fullName,
+            @Size(max = 30) String phone,
+            @Size(max = 80) String city,
+            @NotNull SellerType sellerType,
+            @Size(max = 120) String shopName) {
+    }
+
+    public record PasswordRequest(@NotBlank String currentPassword,
+                                  @NotBlank @Size(min = 8, max = 72) String newPassword) {
+    }
+
     public record LoginRequest(@NotBlank @Email String email, @NotBlank String password) {
     }
 

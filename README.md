@@ -16,6 +16,7 @@ Marketplace tunisienne de pièces auto d'occasion. Particuliers et casses publie
 - **Recherche** : texte, catégorie et filtre « Mon garage » (ne montre que les pièces compatibles avec ta voiture).
 - **Commande** : choix Aramex ou La Poste, paiement carte, D17 ou à la livraison, protection acheteur.
 - **Suivi** : expédition par le vendeur, étapes de livraison, confirmation de réception, litige, annulation.
+- **Profil** : modification du nom, téléphone, ville, type de compte (particulier / casse) et du mot de passe.
 - **Portefeuille vendeur** : gains en attente / disponibles, commission déduite, demande de retrait (RIB ou D17).
 - **Admin** (API) : mise à jour du statut de livraison, résolution des litiges, validation des retraits.
 - Confirmation automatique 48 h après la livraison.
@@ -32,8 +33,8 @@ Marketplace tunisienne de pièces auto d'occasion. Particuliers et casses publie
 
 ## Ce qui est simulé pour l'instant
 
-- **Paiement** : `SimulatedPaymentGateway` accepte tout. À remplacer par une implémentation de `PaymentGateway` (Konnect, Flouci, ClicToPay…).
-- **Transporteurs** : `AramexShippingProvider` et `LaPosteShippingProvider` génèrent un numéro de suivi. À brancher sur les API des transporteurs une fois les contrats signés. Les statuts « en transit » et « livré » se mettent à jour via l'API admin en attendant les webhooks.
+- **Paiement** : seul le paiement à la livraison est actif (`PAYMENT_METHODS=A_LA_LIVRAISON`). Carte et D17 s'affichent « bientôt » ; pour les activer plus tard : `PAYMENT_METHODS=A_LA_LIVRAISON,CARTE,D17`. `SimulatedPaymentGateway` accepte tout. À remplacer par une implémentation de `PaymentGateway` (Konnect, Flouci, ClicToPay…).
+- **Transporteurs** : `AramexShippingProvider` et `LaPosteShippingProvider` génèrent un numéro de suivi. À brancher sur les API des transporteurs une fois les contrats signés. Les statuts « en transit » et « livré » sont mis à jour par le vendeur depuis la page de suivi (ou par l'API admin) en attendant les webhooks des transporteurs.
 
 ## Lancer en local
 

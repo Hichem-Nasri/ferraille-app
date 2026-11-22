@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ApiService, errorMessage } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { DinarPipe } from '../core/dinar.pipe';
@@ -12,7 +12,7 @@ import { IconComponent } from '../shared/icon.component';
 @Component({
   selector: 'fr-wallet-page',
   standalone: true,
-  imports: [FormsModule, DatePipe, DinarPipe, IconComponent, BottomNavComponent],
+  imports: [FormsModule, RouterLink, DatePipe, DinarPipe, IconComponent, BottomNavComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
@@ -23,6 +23,7 @@ import { IconComponent } from '../shared/icon.component';
             <span class="name">{{ u.displayName }}</span>
             <span class="muted small">{{ u.sellerType === 'PRO' ? 'Professionnel' : 'Particulier' }}{{ u.city ? ' · ' + u.city : '' }}</span>
           </div>
+          <a class="icon-btn" routerLink="/profil" aria-label="Modifier mon profil"><fr-icon name="user" /></a>
           <button type="button" class="icon-btn" aria-label="Se déconnecter" (click)="logout()"><fr-icon name="logout" /></button>
         </div>
       }

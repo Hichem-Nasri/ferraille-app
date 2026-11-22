@@ -16,9 +16,19 @@ import {
   PaymentMethod,
   PayoutMethod,
   SellerQuote,
+  SellerType,
+  User,
   WalletSummary,
   WalletTransaction,
 } from './models';
+
+export interface ProfileUpdate {
+  fullName: string;
+  phone?: string;
+  city?: string;
+  sellerType: SellerType;
+  shopName?: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -86,6 +96,22 @@ export class ApiService {
 
   dispute(id: number, reason: string): Observable<OrderDetail> {
     return this.http.post<OrderDetail>(`/api/orders/${id}/dispute`, { reason });
+  }
+
+  paymentMethods(): Observable<PaymentMethod[]> {
+    return this.http.get<PaymentMethod[]>('/api/pricing/payment-methods');
+  }
+
+  deliveryStatus(id: number, status: 'IN_TRANSIT' | 'DELIVERED'): Observable<OrderDetail> {
+    return this.http.post<OrderDetail>(`/api/orders/${id}/delivery-status`, { status });
+  }
+
+  updateProfile(profile: ProfileUpdate): Observable<User> {
+    return this.http.put<User>('/api/me', profile);
+  }
+
+  changePassword(currentPassword: string, newPassword: string): Observable<void> {
+    return this.http.put<void>('/api/me/password', { currentPassword, newPassword });
   }
 
   wallet(): Observable<WalletSummary> {
