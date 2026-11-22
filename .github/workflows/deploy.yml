@@ -111,7 +111,19 @@ jobs:
             docker compose pull backend frontend
             docker compose up -d --no-build --remove-orphans
             docker image prune -f
-            sleep 20
+            PORT=$(grep -E '^WEB_PORT=' .env | cut -d= -f2); PORT=${PORT:-8090}
+            for i in $(seq 1 30); do
+              code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:$PORT/api/listings?size=1" || true)
+              [ "$code" = "200" ] && break
+              sleep 5
+            done
             docker compose ps
-            docker compose logs --tail=40 backend | grep -i "mot de passe provisoire" || true
+            echo "--- Vérification ---"
+            for path in "/" "/api/listings?size=1" "/pieces/moteur" "/sitemap.xml" "/robots.txt"; do
+              echo "$path -> $(curl -s -o /dev/null -w '%{http_code}' "http://localhost:$PORT$path")"
+            done
+            curl -s "http://localhost:$PORT/api/listings?size=50" | grep -o '"totalElements":[0-9]*' || true
+            curl -s "http://localhost:$PORT/" | grep -o '<title>[^<]*</title>' || true
+            docker compose logs --tail=300 backend | grep -iE "mot de passe provisoire|ERROR|Started FerrailleApplication" | tail -15 || true
+            [ "$code" = "200" ] || { echo "L'API ne répond pas"; docker compose logs --tail=80 backend; exit 1; }
             docker logout ghcr.io
