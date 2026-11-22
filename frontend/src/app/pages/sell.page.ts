@@ -305,7 +305,8 @@ export class SellPage implements OnInit {
 
   submit(): void {
     const category = this.category();
-    if (!category || !this.price) {
+    const price = this.price;
+    if (!category || !price) {
       return;
     }
     this.saving.set(true);
@@ -316,7 +317,7 @@ export class SellPage implements OnInit {
         description: this.description || undefined,
         category,
         condition: this.condition(),
-        price: this.price,
+        price,
         negotiable: this.negotiable,
         city: this.city,
         oemReference: this.oemReference || undefined,

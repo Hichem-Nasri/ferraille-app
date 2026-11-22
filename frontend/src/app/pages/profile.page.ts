@@ -164,7 +164,7 @@ export class ProfilePage implements OnInit {
       this.sellerType = user.sellerType;
       this.shopName = user.shopName ?? '';
       this.fullName = user.fullName;
-      this.email = user.email;
+      this.email = user.email ?? '';
       this.phone = user.phone ?? '';
       this.whatsapp = user.whatsapp ?? '';
       this.facebookUrl = user.facebookUrl ?? '';
