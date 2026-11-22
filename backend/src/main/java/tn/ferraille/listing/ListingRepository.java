@@ -8,11 +8,19 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpecificationExecutor<Listing> {
 
     Page<Listing> findBySellerIdAndStatusNotOrderByCreatedAtDesc(Long sellerId, ListingStatus status, Pageable pageable);
 
     long countBySellerIdAndStatus(Long sellerId, ListingStatus status);
+
+    List<Listing> findByStatusOrderByUpdatedAtDesc(ListingStatus status, Pageable pageable);
+
+    List<Listing> findByStatusAndCategoryOrderByCreatedAtDesc(ListingStatus status, Category category, Pageable pageable);
+
+    List<Listing> findByStatusOrderByCreatedAtDesc(ListingStatus status, Pageable pageable);
 
     @Modifying
     @Query("update Listing l set l.views = l.views + 1 where l.id = :id")

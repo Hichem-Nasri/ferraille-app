@@ -37,7 +37,7 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/actuator/health/**", "/error").permitAll()
+                        .requestMatchers("/api/auth/**", "/actuator/health/**", "/error", "/seo/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/listings", "/api/listings/{id:\\d+}", "/api/pricing/**", "/api/shipping/**", "/uploads/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())

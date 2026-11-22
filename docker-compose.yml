@@ -29,6 +29,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET manquant dans .env}
       CORS_ORIGINS: ${PUBLIC_URL:-http://localhost}
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost}
       DEMO_DATA: ${DEMO_DATA:-false}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
@@ -46,9 +47,12 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
+    ports:
+      - "${WEB_PORT:-8090}:80"
 
   caddy:
     image: caddy:2-alpine
+    profiles: ["https"]
     restart: unless-stopped
     depends_on:
       - frontend

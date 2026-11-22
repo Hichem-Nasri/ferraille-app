@@ -333,7 +333,7 @@ export class SellPage implements OnInit {
         fits: this.fits(),
       })
       .subscribe({
-        next: (l) => this.router.navigate(['/piece', l.id]),
+        next: (l) => this.router.navigate(['/piece', l.id, l.slug]),
         error: (e) => {
           this.error.set(errorMessage(e));
           this.saving.set(false);

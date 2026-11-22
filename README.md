@@ -64,21 +64,32 @@ cd frontend && npm install && npm start
 
 ## Déploiement sur un VPS
 
-1. **Serveur** : Ubuntu 22.04+ avec Docker et le plugin Compose.
-   ```bash
-   curl -fsSL https://get.docker.com | sh
-   sudo mkdir -p /opt/ferraille && sudo chown $USER /opt/ferraille
-   ```
-2. **DNS** : un enregistrement A de ton domaine vers l'IP du VPS (Caddy obtient le certificat HTTPS tout seul).
-3. **Fichier `.env`** sur le serveur : copie `.env.example` dans `/opt/ferraille/.env` et remplis les vraies valeurs. Il ne quitte jamais le serveur.
-4. **Secrets GitHub** (Settings → Secrets and variables → Actions) :
-   - `VPS_HOST` — IP ou domaine du serveur
-   - `VPS_USER` — utilisateur SSH (membre du groupe `docker`)
+Le déploiement cohabite avec d'autres applications : par défaut, Ferraille écoute uniquement sur le port **8090** (`WEB_PORT`) et ne touche pas aux ports 80/443.
+
+1. **Serveur** : Docker et le plugin Compose installés (`docker compose version`). L'utilisateur SSH doit être dans le groupe `docker`.
+2. **Secrets GitHub** (Settings → Secrets and variables → Actions → *Secrets*) :
+   - `VPS_HOST` — IP du serveur (ex. `2.25.11.27`)
+   - `VPS_USER` — utilisateur SSH
    - `VPS_SSH_KEY` — clé privée SSH
    - `VPS_PORT` — optionnel, 22 par défaut
-5. **Push sur `main`** : le workflow *Build & Deploy* lance les tests, construit les images, les pousse sur GHCR puis fait `docker compose pull && up -d` sur le serveur.
+   - `OWNER_PASSWORD` — mot de passe du compte Hichem Nasri (optionnel)
+3. **Variables GitHub** optionnelles (onglet *Variables*) : `WEB_PORT` (8090), `PUBLIC_URL`, `DEPLOY_DIR` (`/opt/ferraille`), `ADMIN_EMAIL`.
+4. **Push sur `main`** : tests, construction des images, publication sur GHCR puis `docker compose up -d` sur le serveur. Au premier déploiement, le fichier `.env` est créé sur le serveur avec un mot de passe de base de données et un secret JWT générés aléatoirement.
 
-Sans les secrets VPS, le workflow construit et publie quand même les images, puis s'arrête avant le déploiement.
+L'application est alors accessible sur `http://IP_DU_SERVEUR:8090`.
+
+### Passer en production avec un domaine
+
+Si un autre site occupe déjà 80/443, ajoute un bloc dans son reverse proxy (Nginx, Caddy…) qui renvoie ton domaine vers `127.0.0.1:8090`. Sur un serveur dédié, mets `COMPOSE_PROFILES=https` et `DOMAIN=ton-domaine.tn` dans `.env` : Caddy obtient alors le certificat HTTPS automatiquement. Dans les deux cas, mets `PUBLIC_URL=https://ton-domaine.tn`.
+
+## SEO
+
+- Les pages publiques (`/`, `/pieces/{catégorie}`, `/piece/{id}/{slug}`) sont **rendues côté serveur** : le HTML envoyé contient le titre, la description, les balises Open Graph et Twitter, l'URL canonique, les données structurées JSON-LD (`Product` + `Offer` en TND, `BreadcrumbList`, `ItemList`, `WebSite` avec `SearchAction`) et le contenu lisible (titre, prix, description, véhicules compatibles, liens internes). Google, Facebook et WhatsApp voient donc la page sans exécuter le JavaScript.
+- Si le rendu serveur échoue, Nginx sert l'application Angular normalement.
+- `sitemap.xml` (avec les images) et `robots.txt` sont générés dynamiquement. Les pages privées (compte, commandes, paiement) sont en `noindex`.
+- URLs lisibles avec slug (`/piece/12/phare-avant-led-gauche`) et redirection 301 vers l'URL canonique.
+- Pages catégories indexables (`/pieces/eclairage`, `/pieces/moteur`…), image de partage `og-image.png`, manifest et icônes.
+- Après la mise en ligne avec un domaine : déclare le site et le sitemap dans Google Search Console.
 
 ## API principale
 

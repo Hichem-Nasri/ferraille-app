@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, Input, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -6,7 +6,8 @@ import { EMPTY, Subject, catchError, debounceTime, map, switchMap } from 'rxjs';
 import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { GarageService } from '../core/garage.service';
-import { CATEGORIES, MAKES } from '../core/labels';
+import { CATEGORIES, MAKES, categoryBySlug } from '../core/labels';
+import { DEFAULT_DESCRIPTION, SITE_NAME, SeoService } from '../core/seo.service';
 import { Category, ListingFilter, ListingSummary } from '../core/models';
 import { BottomNavComponent } from '../shared/bottom-nav.component';
 import { IconComponent } from '../shared/icon.component';
@@ -25,7 +26,7 @@ import { PartIconComponent } from '../shared/part-icon.component';
           <div class="logo"><fr-part-icon name="gear" [size]="22" [stroke]="5" /></div>
           <div class="stack">
             <span class="wordmark">ferraille</span>
-            <span class="muted small">Pièces auto d'occasion · Tunisie</span>
+            <h1 class="tagline">{{ heading() }}</h1>
           </div>
         </div>
         @if (auth.isLoggedIn()) {
@@ -87,10 +88,12 @@ import { PartIconComponent } from '../shared/part-icon.component';
         <h2 class="section-title">Catégories</h2>
         <div class="categories">
           @for (c of categories; track c.value) {
-            <button type="button" class="category" [class.active]="category() === c.value" (click)="toggleCategory(c.value)">
+            <a class="category" [class.active]="category() === c.value"
+               [routerLink]="category() === c.value ? '/' : ['/pieces', c.slug]"
+               [attr.aria-current]="category() === c.value ? 'page' : null">
               <span class="cat-icon"><fr-part-icon [name]="c.icon" [size]="28" [stroke]="3.5" /></span>
               <span>{{ c.label }}</span>
-            </button>
+            </a>
           }
         </div>
       </section>
@@ -128,6 +131,7 @@ import { PartIconComponent } from '../shared/part-icon.component';
   styles: `
     .brand { gap: 10px; }
     .logo { width: 38px; height: 38px; border-radius: 12px; background: var(--forest); color: var(--lime); display: flex; align-items: center; justify-content: center; }
+    .tagline { margin: 2px 0 0; font-family: var(--font); font-size: 12px; font-weight: 500; letter-spacing: 0; color: var(--muted); }
     .wordmark { font-family: var(--display); font-weight: 700; font-size: 22px; letter-spacing: -0.5px; line-height: 1; }
     .login { height: 44px; font-size: 14px; }
     .search { flex: 1; height: 52px; border-radius: 16px; background: var(--white); border: 1px solid var(--line); display: flex; align-items: center; gap: 10px; padding: 0 16px; color: var(--muted); }
@@ -140,7 +144,7 @@ import { PartIconComponent } from '../shared/part-icon.component';
     .garage-form { display: flex; flex-direction: column; gap: 12px; }
     .gap { gap: 12px; }
     .categories { display: flex; gap: 10px; overflow-x: auto; margin-right: -20px; padding-right: 20px; scrollbar-width: none; }
-    .category { border: 0; background: none; padding: 0; width: 74px; display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--ink); }
+    .category { border: 0; background: none; padding: 0; text-decoration: none; width: 74px; display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--ink); }
     .cat-icon { width: 64px; height: 64px; border-radius: 20px; background: var(--white); border: 1px solid var(--line); color: var(--green); display: flex; align-items: center; justify-content: center; }
     .category.active .cat-icon { background: var(--forest); border-color: var(--forest); color: var(--lime); }
     .banner { gap: 14px; }
@@ -170,8 +174,37 @@ export class HomePage implements OnInit {
 
   readonly sectionTitle = computed(() => {
     const v = this.garage.vehicle();
-    return v ? `Compatibles avec ta ${v.model}` : 'Dernières pièces';
+    const meta = CATEGORIES.find((c) => c.value === this.category());
+    if (v) {
+      return `${meta ? meta.label + ' compatibles' : 'Compatibles'} avec ta ${v.model}`;
+    }
+    return meta ? `${meta.label} d'occasion` : 'Dernières pièces';
   });
+
+  readonly heading = computed(() => {
+    const meta = CATEGORIES.find((c) => c.value === this.category());
+    return meta ? `Pièces ${meta.seo} d'occasion en Tunisie` : "Pièces auto d'occasion en Tunisie";
+  });
+
+  private readonly seo = inject(SeoService);
+  private initialized = false;
+
+  @Input()
+  set q(value: string | undefined) {
+    this.query = value ?? '';
+    if (this.initialized) {
+      this.search();
+    }
+  }
+
+  @Input()
+  set categorie(value: string | undefined) {
+    this.category.set(categoryBySlug(value)?.value ?? null);
+    if (this.initialized) {
+      this.updateSeo();
+      this.search();
+    }
+  }
 
   query = '';
   draftMake = '';
@@ -210,7 +243,50 @@ export class HomePage implements OnInit {
           this.loading.set(false);
         },
       });
+    this.initialized = true;
+    this.updateSeo();
     this.search();
+  }
+
+  private updateSeo(): void {
+    const meta = CATEGORIES.find((c) => c.value === this.category());
+    if (meta) {
+      this.seo.set({
+        title: `Pièces ${meta.seo} d'occasion en Tunisie | ${SITE_NAME}`,
+        description: `Pièces ${meta.seo} d'occasion à vendre en Tunisie, par des particuliers et des casses. Livraison Aramex et La Poste partout en Tunisie, paiement protégé.`,
+        path: `/pieces/${meta.slug}`,
+        jsonLd: [
+          {
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              { '@type': 'ListItem', position: 1, name: 'Accueil', item: `${this.seo.origin}/` },
+              { '@type': 'ListItem', position: 2, name: meta.label, item: `${this.seo.origin}/pieces/${meta.slug}` },
+            ],
+          },
+        ],
+      });
+      return;
+    }
+    this.seo.set({
+      title: `${SITE_NAME} — Pièces auto d'occasion en Tunisie | Achat & vente`,
+      description: DEFAULT_DESCRIPTION,
+      path: '/',
+      noindex: this.query.trim().length > 0,
+      jsonLd: [
+        {
+          '@type': 'WebSite',
+          name: SITE_NAME,
+          url: `${this.seo.origin}/`,
+          inLanguage: 'fr-TN',
+          potentialAction: {
+            '@type': 'SearchAction',
+            target: `${this.seo.origin}/?q={search_term_string}`,
+            'query-input': 'required name=search_term_string',
+          },
+        },
+        { '@type': 'Organization', name: SITE_NAME, url: `${this.seo.origin}/`, logo: `${this.seo.origin}/icon-512.png`, areaServed: 'TN' },
+      ],
+    });
   }
 
   search(): void {
@@ -219,11 +295,6 @@ export class HomePage implements OnInit {
 
   loadMore(): void {
     this.searches.next({ filter: this.filter(this.page() + 1), append: true });
-  }
-
-  toggleCategory(value: Category): void {
-    this.category.set(this.category() === value ? null : value);
-    this.search();
   }
 
   saveGarage(): void {

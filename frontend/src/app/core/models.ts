@@ -62,6 +62,7 @@ export interface VehicleFit {
 
 export interface ListingSummary {
   id: number;
+  slug: string;
   title: string;
   price: number;
   category: Category;
@@ -85,6 +86,7 @@ export interface SellerSummary {
 
 export interface ListingDetail {
   id: number;
+  slug: string;
   title: string;
   description?: string;
   price: number;

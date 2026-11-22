@@ -28,10 +28,10 @@ import { PartIconComponent } from '../shared/part-icon.component';
         <div class="card list">
           @for (l of listings(); track l.id) {
             <div class="row item">
-              <a class="thumb" [routerLink]="['/piece', l.id]" [style.background]="meta(l).tint" [style.color]="meta(l).tone">
+              <a class="thumb" [routerLink]="['/piece', l.id, l.slug]" [style.background]="meta(l).tint" [style.color]="meta(l).tone">
                 @if (l.coverPhoto) { <img [src]="l.coverPhoto" alt=""> } @else { <fr-part-icon [name]="meta(l).icon" [size]="28" [stroke]="3.5" /> }
               </a>
-              <a class="stack grow info" [routerLink]="['/piece', l.id]">
+              <a class="stack grow info" [routerLink]="['/piece', l.id, l.slug]">
                 <span class="title">{{ l.title }}</span>
                 <span class="muted small">{{ l.price | dinar }} · {{ statusLabel(l.status) }}</span>
               </a>

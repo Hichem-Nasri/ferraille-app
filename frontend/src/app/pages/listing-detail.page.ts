@@ -6,6 +6,7 @@ import { AuthService } from '../core/auth.service';
 import { DinarPipe } from '../core/dinar.pipe';
 import { GarageService } from '../core/garage.service';
 import { categoryMeta, conditionLabel } from '../core/labels';
+import { SITE_NAME, SeoService } from '../core/seo.service';
 import { CarrierOption, ListingDetail } from '../core/models';
 import { IconComponent } from '../shared/icon.component';
 import { PartIconComponent } from '../shared/part-icon.component';
@@ -21,7 +22,7 @@ import { PartIconComponent } from '../shared/part-icon.component';
     } @else if (listing(); as l) {
       <div class="hero" [style.background]="meta().tint" [style.color]="meta().tone">
         @if (l.photos.length) {
-          <img [src]="l.photos[photoIndex()]" [alt]="l.title">
+          <img [src]="l.photos[photoIndex()]" [alt]="l.title + ' — photo ' + (photoIndex() + 1)" fetchpriority="high">
         } @else {
           <fr-part-icon [name]="meta().icon" [size]="180" [stroke]="1.6" />
         }
@@ -43,7 +44,7 @@ import { PartIconComponent } from '../shared/part-icon.component';
         <div class="stack gap8">
           <div class="row tags">
             <span class="chip chip-dark small-chip">{{ condition() }}</span>
-            <span class="chip small-chip">{{ meta().label }}</span>
+            <a class="chip small-chip" [routerLink]="['/pieces', meta().slug]">{{ meta().label }}</a>
           </div>
           <h1 class="title">{{ l.title }}</h1>
           <div class="row price-row">
@@ -164,8 +165,10 @@ import { PartIconComponent } from '../shared/part-icon.component';
 })
 export class ListingDetailPage implements OnInit {
   @Input() id!: string;
+  @Input() slug?: string;
 
   private readonly api = inject(ApiService);
+  private readonly seo = inject(SeoService);
   private readonly auth = inject(AuthService);
   private readonly garage = inject(GarageService);
   private readonly router = inject(Router);
@@ -198,10 +201,79 @@ export class ListingDetailPage implements OnInit {
 
   ngOnInit(): void {
     this.api.listing(Number(this.id)).subscribe({
-      next: (l) => this.listing.set(l),
-      error: (e) => this.error.set(errorMessage(e)),
+      next: (l) => {
+        this.listing.set(l);
+        if (this.slug !== l.slug) {
+          this.location.replaceState(`/piece/${l.id}/${l.slug}`);
+        }
+        this.updateSeo(l);
+      },
+      error: (e) => {
+        this.error.set(errorMessage(e));
+        this.seo.set({ title: `Pièce introuvable | ${SITE_NAME}`, noindex: true });
+      },
     });
     this.api.shippingOptions().subscribe((o) => this.carriers.set(o));
+  }
+
+  private updateSeo(l: ListingDetail): void {
+    const meta = categoryMeta(l.category);
+    const path = `/piece/${l.id}/${l.slug}`;
+    const price = Number(l.price).toLocaleString('fr-FR', { maximumFractionDigits: 3 });
+    const fit = l.fits[0] ? ` — ${l.fits[0].make} ${l.fits[0].model}` : '';
+    const vehicles = l.fits
+      .slice(0, 3)
+      .map((f) => `${f.make} ${f.model}`)
+      .join(', ');
+    const description =
+      `${l.title} d'occasion, ${conditionLabel(l.condition).toLowerCase()}, ${price} DT à ${l.city}. ` +
+      (vehicles ? `Compatible ${vehicles}. ` : '') +
+      'Livraison Aramex ou La Poste partout en Tunisie, paiement protégé.';
+    const condition =
+      l.condition === 'NEUF'
+        ? 'https://schema.org/NewCondition'
+        : l.condition === 'POUR_PIECES'
+          ? 'https://schema.org/DamagedCondition'
+          : 'https://schema.org/UsedCondition';
+    this.seo.set({
+      title: `${l.title}${fit} d'occasion | ${price} DT | ${SITE_NAME}`,
+      description,
+      path,
+      image: l.photos[0],
+      type: 'product',
+      jsonLd: [
+        {
+          '@type': 'Product',
+          name: l.title,
+          url: this.seo.origin + path,
+          sku: `FR-${l.id}`,
+          ...(l.oemReference ? { mpn: l.oemReference } : {}),
+          image: l.photos.map((p) => this.seo.absolute(p)),
+          description: l.description || description,
+          category: `Pièces auto > ${meta.label}`,
+          itemCondition: condition,
+          ...(l.fits[0] ? { brand: { '@type': 'Brand', name: l.fits[0].make } } : {}),
+          offers: {
+            '@type': 'Offer',
+            url: this.seo.origin + path,
+            price: Number(l.price).toFixed(3),
+            priceCurrency: 'TND',
+            itemCondition: condition,
+            availability: l.status === 'ACTIVE' ? 'https://schema.org/InStock' : 'https://schema.org/SoldOut',
+            areaServed: 'TN',
+            seller: { '@type': l.seller.sellerType === 'PRO' ? 'Organization' : 'Person', name: l.seller.displayName },
+          },
+        },
+        {
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Accueil', item: `${this.seo.origin}/` },
+            { '@type': 'ListItem', position: 2, name: meta.label, item: `${this.seo.origin}/pieces/${meta.slug}` },
+            { '@type': 'ListItem', position: 3, name: l.title, item: this.seo.origin + path },
+          ],
+        },
+      ],
+    });
   }
 
   years(from?: number | null, to?: number | null): string {

@@ -43,6 +43,8 @@ ferraille:
   admin-email: ${ADMIN_EMAIL:}
   admin-password: ${ADMIN_PASSWORD:}
   owner-password: ${OWNER_PASSWORD:}
+  public-url: ${PUBLIC_URL:http://localhost}
+  frontend-index-url: ${FRONTEND_INDEX_URL:http://frontend/index.html}
   jwt:
     secret: ${JWT_SECRET:change-me-change-me-change-me-change-me-change-me-0123456789}
     expiration-minutes: ${JWT_EXPIRATION_MINUTES:10080}
