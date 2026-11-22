@@ -22,4 +22,9 @@ jobs:
             echo "=== Nginx hôte ==="; command -v nginx && nginx -v 2>&1; ls /etc/nginx/sites-enabled 2>/dev/null; ls /etc/nginx/conf.d 2>/dev/null
             for f in /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*.conf; do [ -f "$f" ] && { echo "--- $f"; grep -E 'server_name|listen|proxy_pass|ssl_certificate ' "$f"; }; done 2>/dev/null
             echo "=== Caddy / Traefik / Apache ==="; command -v caddy; command -v apache2; docker ps --format '{{.Names}} {{.Image}}' | grep -iE 'caddy|traefik|nginx|proxy' || true
-            echo "=== Certbot ==="; command -v certbot && ls /etc/letsencrypt/live 2>/dev/null
+            echo "=== Certbot ==="; command -v certbot && ls /etc/letsencrypt/live 2>/dev/null || true
+            echo "=== Caddy HMS : montages ==="; docker inspect hms-caddy-1 --format '{{range .Mounts}}{{.Source}} -> {{.Destination}}{{println}}{{end}}' 2>/dev/null || true
+            echo "=== Caddy HMS : réseaux ==="; docker inspect hms-caddy-1 --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}} gw={{$v.Gateway}}{{println}}{{end}}' 2>/dev/null || true
+            echo "=== Caddy HMS : configuration ==="; docker exec hms-caddy-1 cat /etc/caddy/Caddyfile 2>/dev/null || true
+            echo "=== Projet HMS ==="; docker inspect hms-caddy-1 --format '{{index .Config.Labels "com.docker.compose.project.working_dir"}}' 2>/dev/null || true
+            true
