@@ -1,0 +1,25 @@
+name: Diagnostic serveur
+
+on:
+  workflow_dispatch:
+
+jobs:
+  info:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lire la configuration du serveur
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            echo "=== OS ==="; . /etc/os-release && echo "$PRETTY_NAME"
+            echo "=== Ports en écoute ==="; (sudo -n ss -ltnp 2>/dev/null || ss -ltn) | grep -E ':(80|443|8090|8080|4200|3000|5432)\b' || true
+            echo "=== Conteneurs ==="; docker ps --format '{{.Names}}\t{{.Image}}\t{{.Ports}}'
+            echo "=== Nginx hôte ==="; command -v nginx && nginx -v 2>&1; ls /etc/nginx/sites-enabled 2>/dev/null; ls /etc/nginx/conf.d 2>/dev/null
+            for f in /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*.conf; do [ -f "$f" ] && { echo "--- $f"; grep -E 'server_name|listen|proxy_pass|ssl_certificate ' "$f"; }; done 2>/dev/null
+            echo "=== Caddy / Traefik / Apache ==="; command -v caddy; command -v apache2; docker ps --format '{{.Names}} {{.Image}}' | grep -iE 'caddy|traefik|nginx|proxy' || true
+            echo "=== Certbot ==="; command -v certbot && ls /etc/letsencrypt/live 2>/dev/null
