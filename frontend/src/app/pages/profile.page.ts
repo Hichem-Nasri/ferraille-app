@@ -61,13 +61,13 @@ import { IconComponent } from '../shared/icon.component';
           <label for="whatsapp">Numéro WhatsApp</label>
           <input id="whatsapp" class="input" type="tel" name="whatsapp" [(ngModel)]="whatsapp" placeholder="+216 98 123 456"
                  pattern="^[+0-9 ]{8,20}$" autocomplete="tel">
-          <span class="muted small">Les acheteurs t'écriront directement sur WhatsApp.</span>
+          <span class="muted small">Les acheteurs t'écriront directement sur WhatsApp. Laisse vide si c'est le même que ton téléphone.</span>
         </div>
         <div class="field">
           <label for="fb">Lien Facebook ou Messenger (optionnel)</label>
           <input id="fb" class="input" type="url" name="facebookUrl" [(ngModel)]="facebookUrl"
                  placeholder="https://m.me/ton.profil ou https://facebook.com/ta.page">
-          <span class="muted small">Affiche un bouton « Messenger » sur tes annonces.</span>
+          <span class="muted small">Affiche un bouton « Messenger » sur tes annonces. Pour le trouver : ouvre Messenger › ta photo › « Partager le lien de ton profil » (ou facebook.com › ton profil, copie l'adresse).</span>
         </div>
         <div class="grid-2">
           <div class="field">
