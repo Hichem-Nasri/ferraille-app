@@ -43,11 +43,14 @@ cp .env.example .env        # puis renseigne DB_PASSWORD et JWT_SECRET
 docker compose up --build
 ```
 
-Ouvre http://localhost. Avec `DEMO_DATA=true`, trois comptes de démo sont créés (mot de passe `demo12345`) :
+Ouvre http://localhost. Avec `DEMO_DATA=true`, la base est remplie au premier démarrage :
 
-- `casse@demo.ferraille.tn` — casse pro
-- `karim@demo.ferraille.tn` — vendeur particulier
-- `sami@demo.ferraille.tn` — acheteur
+- `nasri.hichem.pro@gmail.com` — Hichem Nasri, particulier, 12 annonces avec photos. Mot de passe : la valeur de `OWNER_PASSWORD` (si elle est vide, un mot de passe provisoire est affiché dans les logs du backend).
+- `casse@demo.ferraille.tn` — casse pro (mot de passe `demo12345`)
+- `karim@demo.ferraille.tn` — vendeur particulier (mot de passe `demo12345`)
+- `sami@demo.ferraille.tn` — acheteur (mot de passe `demo12345`)
+
+Les photos des annonces de démo viennent de [Pexels](https://www.pexels.com/license/) (voir `PHOTO_CREDITS.md`). Ce sont des annonces d'exemple : passe `DEMO_DATA=false` et vide la base avant d'ouvrir le site au public.
 
 ### Sans Docker
 
