@@ -65,7 +65,7 @@ public final class ListingDtos {
         public static ListingSummary from(Listing l) {
             return new ListingSummary(l.getId(), Slugs.of(l.getTitle()), l.getTitle(), l.getPrice(), l.getCategory(), l.getCondition(),
                     l.getCity(), l.getPhotos().isEmpty() ? null : l.getPhotos().get(0),
-                    l.getSeller().getSellerType(), fitsLabel(l.getFits()), l.getStatus(), l.getCreatedAt());
+                    l.getSeller().getSellerType(), ListingDtos.fitsLabel(l.getFits()), l.getStatus(), l.getCreatedAt());
         }
     }
 

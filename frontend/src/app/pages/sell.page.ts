@@ -71,7 +71,7 @@ import { PartIconComponent } from '../shared/part-icon.component';
       <div class="field">
         <span class="label">Véhicules compatibles</span>
         <div class="cats">
-          @for (fit of fits(); track $index; let i = $index) {
+          @for (fit of fits(); track fit; let i = $index) {
             <span class="chip chip-dark">
               {{ fitLabel(fit) }}
               <button type="button" class="chip-x" (click)="removeFit(i)" [attr.aria-label]="'Retirer ' + fitLabel(fit)">

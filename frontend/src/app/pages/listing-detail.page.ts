@@ -19,7 +19,8 @@ import { PartIconComponent } from '../shared/part-icon.component';
   template: `
     @if (error()) {
       <div class="page"><div class="error">{{ error() }}</div><a routerLink="/">Retour à l'accueil</a></div>
-    } @else if (listing(); as l) {
+    }
+    @if (listing(); as l) {
       <div class="hero" [style.background]="meta().tint" [style.color]="meta().tone">
         @if (l.photos.length) {
           <img [src]="l.photos[photoIndex()]" [alt]="l.title + ' — photo ' + (photoIndex() + 1)" fetchpriority="high">
@@ -125,7 +126,7 @@ import { PartIconComponent } from '../shared/part-icon.component';
           </button>
         }
       </div>
-    } @else {
+    } @else if (!error()) {
       <div class="page"><div class="empty">Chargement…</div></div>
     }
   `,
