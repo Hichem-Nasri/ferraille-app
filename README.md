@@ -70,7 +70,7 @@ Le déploiement cohabite avec d'autres applications : par défaut, Ferraille éc
 2. **Secrets GitHub** (Settings → Secrets and variables → Actions → *Secrets*) :
    - `VPS_HOST` — IP du serveur (ex. `2.25.11.27`)
    - `VPS_USER` — utilisateur SSH
-   - `VPS_SSH_KEY` — clé privée SSH
+   - `VPS_PASSWORD` — mot de passe SSH, **ou** `VPS_SSH_KEY` — clé privée SSH (recommandé)
    - `VPS_PORT` — optionnel, 22 par défaut
    - `OWNER_PASSWORD` — mot de passe du compte Hichem Nasri (optionnel)
 3. **Variables GitHub** optionnelles (onglet *Variables*) : `WEB_PORT` (8090), `PUBLIC_URL`, `DEPLOY_DIR` (`/opt/ferraille`), `ADMIN_EMAIL`.

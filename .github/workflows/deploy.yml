@@ -66,7 +66,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Pas de serveur configuré
         if: env.HAS_VPS != 'true'
-        run: echo "::notice::Ajoute les secrets VPS_HOST, VPS_USER et VPS_SSH_KEY pour activer le déploiement."
+        run: echo "::notice::Ajoute les secrets VPS_HOST, VPS_USER et VPS_PASSWORD (ou VPS_SSH_KEY) pour activer le déploiement."
       - name: Copier la configuration sur le serveur
         if: env.HAS_VPS == 'true'
         uses: appleboy/scp-action@v0.1.7
@@ -74,6 +74,7 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          password: ${{ secrets.VPS_PASSWORD }}
           port: ${{ secrets.VPS_PORT || 22 }}
           source: docker-compose.yml,deploy/Caddyfile
           target: ${{ vars.DEPLOY_DIR || '/opt/ferraille' }}
@@ -84,6 +85,7 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          password: ${{ secrets.VPS_PASSWORD }}
           port: ${{ secrets.VPS_PORT || 22 }}
           script: |
             set -e
