@@ -1,0 +1,79 @@
+name: Brancher un nom de domaine
+
+on:
+  workflow_dispatch:
+    inputs:
+      domain:
+        description: "Nom de domaine (ex. ferraille.tn)"
+        required: true
+      www:
+        description: "Ajouter aussi www.<domaine>"
+        type: boolean
+        default: true
+
+jobs:
+  domain:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Vérifier le DNS
+        run: |
+          DOMAIN='${{ inputs.domain }}'
+          echo "$DOMAIN" | grep -Eq '^[a-z0-9.-]+\.[a-z]{2,}$' || { echo "Domaine invalide"; exit 1; }
+          IP=$(dig +short A "$DOMAIN" | tail -n1)
+          echo "$DOMAIN -> ${IP:-aucune IP}"
+          [ "$IP" = "${{ secrets.VPS_HOST }}" ] || { echo "::error::Le DNS de $DOMAIN ne pointe pas encore vers le serveur. Ajoute un enregistrement A vers l'IP du serveur puis relance (la propagation peut prendre jusqu'à quelques heures)."; exit 1; }
+      - name: Configurer le reverse proxy et l'application
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            set -e
+            DOMAIN='${{ inputs.domain }}'
+            HOSTS="$DOMAIN"
+            [ '${{ inputs.www }}' = 'true' ] && HOSTS="$DOMAIN, www.$DOMAIN"
+            CADDYFILE=/opt/hms/Caddyfile
+            GATEWAY=$(docker inspect hms-caddy-1 --format '{{range .NetworkSettings.Networks}}{{.Gateway}}{{end}}' | head -c 15)
+            PORT=$(grep -E '^WEB_PORT=' /opt/ferraille/.env | cut -d= -f2); PORT=${PORT:-8090}
+            if grep -q "# ferraille:start" "$CADDYFILE"; then
+              echo "Bloc Ferraille déjà présent, remplacement"
+              cp "$CADDYFILE" "$CADDYFILE.bak-$(date +%Y%m%d%H%M%S)"
+              awk '/# ferraille:start/{skip=1} !skip{print} /# ferraille:end/{skip=0}' "$CADDYFILE" > /tmp/Caddyfile.new
+              cat /tmp/Caddyfile.new > "$CADDYFILE"
+            else
+              cp "$CADDYFILE" "$CADDYFILE.bak-$(date +%Y%m%d%H%M%S)"
+            fi
+            {
+              echo ""
+              echo "# ferraille:start"
+              echo "$HOSTS {"
+              echo "	encode gzip"
+              echo "	reverse_proxy $GATEWAY:$PORT"
+              echo "}"
+              echo "# ferraille:end"
+            } >> "$CADDYFILE"
+            if ! docker exec hms-caddy-1 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile; then
+              echo "Configuration invalide, restauration"
+              cat "$(ls -t $CADDYFILE.bak-* | head -n1)" > "$CADDYFILE"
+              exit 1
+            fi
+            docker exec hms-caddy-1 caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
+            cd /opt/ferraille
+            if grep -q '^PUBLIC_URL=' .env; then sed -i "s#^PUBLIC_URL=.*#PUBLIC_URL=https://$DOMAIN#" .env; else echo "PUBLIC_URL=https://$DOMAIN" >> .env; fi
+            REGISTRY="ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+            export REGISTRY TAG=latest
+            echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
+            docker compose up -d --no-build backend
+            docker logout ghcr.io
+            sleep 40
+            echo "--- Vérification HTTPS ---"
+            curl -s -o /dev/null -w "https://$DOMAIN -> %{http_code}\n" "https://$DOMAIN/" || true
+            curl -s "https://$DOMAIN/robots.txt" | tail -n1 || true
+            echo "--- HMS toujours en ligne ---"
+            docker ps --format '{{.Names}} {{.Status}}' | grep hms
