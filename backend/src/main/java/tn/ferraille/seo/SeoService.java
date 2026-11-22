@@ -83,7 +83,7 @@ public class SeoService {
         StringBuilder body = new StringBuilder();
         body.append("<h1>Pièces auto d'occasion en Tunisie</h1>")
                 .append("<p>Achète et vends des pièces détachées d'occasion : moteur, carrosserie, phares, jantes, ")
-                .append("alternateurs… Livraison Aramex et La Poste partout en Tunisie, paiement protégé.</p>");
+                .append("alternateurs… Publication gratuite, contact direct avec le vendeur par WhatsApp, téléphone ou Messenger.</p>");
         body.append(categoryLinks());
         body.append("<h2>Dernières pièces publiées</h2>").append(listingList(latest));
 
@@ -106,7 +106,7 @@ public class SeoService {
         return new SeoPage(200,
                 "Ferraille — Pièces auto d'occasion en Tunisie | Achat & vente",
                 "Pièces détachées auto d'occasion en Tunisie : moteurs, phares, jantes, carrosserie, alternateurs. "
-                        + "Particuliers et casses, livraison Aramex et La Poste, paiement protégé.",
+                        + "Particuliers et casses, annonces gratuites, contact direct par WhatsApp.",
                 "/", publicUrl + "/og-image.png", "website", searching,
                 List.of(website, organization, itemList(latest)), body.toString());
     }
@@ -119,7 +119,7 @@ public class SeoService {
             String title = "Pièces " + category.seoLabel() + " d'occasion en Tunisie | " + SITE_NAME;
             String description = "Pièces " + category.seoLabel() + " d'occasion à vendre en Tunisie : "
                     + listings.size() + " annonce" + (listings.size() > 1 ? "s" : "")
-                    + " de particuliers et de casses. Livraison partout en Tunisie, paiement protégé.";
+                    + " de particuliers et de casses, partout en Tunisie. Contact direct avec le vendeur.";
             StringBuilder body = new StringBuilder()
                     .append(breadcrumbHtml(List.of(Map.entry("Accueil", "/"), Map.entry(category.label(), "/pieces/" + category.slug()))))
                     .append("<h1>Pièces ").append(esc(category.seoLabel())).append(" d'occasion en Tunisie</h1>")
@@ -153,7 +153,7 @@ public class SeoService {
         String description = truncate(l.getTitle() + " d'occasion, " + conditionLabel(l.getCondition()).toLowerCase()
                 + ", " + price(l.getPrice()) + " DT à " + l.getCity() + ". "
                 + (vehicles.isEmpty() ? "" : "Compatible " + vehicles + ". ")
-                + "Livraison Aramex ou La Poste partout en Tunisie, paiement protégé.", 160);
+                + "Contacte directement le vendeur par WhatsApp ou téléphone.", 160);
 
         List<Map.Entry<String, String>> crumbs = List.of(
                 Map.entry("Accueil", "/"),
@@ -184,7 +184,7 @@ public class SeoService {
         }
         body.append("<p>Vendu par ").append(esc(l.getSeller().getDisplayName()))
                 .append(l.getSeller().getSellerType() == SellerType.PRO ? " (professionnel)" : " (particulier)")
-                .append(". Livraison Aramex ou La Poste partout en Tunisie. Paiement bloqué jusqu'à la réception.</p>")
+                .append(". Contacte-le directement par WhatsApp, téléphone ou Messenger.</p>")
                 .append("<p><a href=\"/pieces/").append(category.slug()).append("\">Voir toutes les pièces ")
                 .append(esc(category.seoLabel())).append(" d'occasion</a></p></article>");
 
@@ -217,11 +217,6 @@ public class SeoService {
         Map<String, Object> seller = node(l.getSeller().getSellerType() == SellerType.PRO ? "Organization" : "Person");
         seller.put("name", l.getSeller().getDisplayName());
         offer.put("seller", seller);
-        Map<String, Object> shipping = node("OfferShippingDetails");
-        Map<String, Object> destination = node("DefinedRegion");
-        destination.put("addressCountry", "TN");
-        shipping.put("shippingDestination", destination);
-        offer.put("shippingDetails", shipping);
         product.put("offers", offer);
 
         String image = l.getPhotos().isEmpty() ? publicUrl + "/og-image.png" : absolute(l.getPhotos().get(0));

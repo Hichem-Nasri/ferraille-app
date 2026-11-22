@@ -25,6 +25,8 @@ import {
 export interface ProfileUpdate {
   fullName: string;
   phone?: string;
+  whatsapp?: string;
+  facebookUrl?: string;
   city?: string;
   sellerType: SellerType;
   shopName?: string;
@@ -96,6 +98,10 @@ export class ApiService {
 
   dispute(id: number, reason: string): Observable<OrderDetail> {
     return this.http.post<OrderDetail>(`/api/orders/${id}/dispute`, { reason });
+  }
+
+  recordContact(id: number): Observable<void> {
+    return this.http.post<void>(`/api/listings/${id}/contact`, {});
   }
 
   paymentMethods(): Observable<PaymentMethod[]> {

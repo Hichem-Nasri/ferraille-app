@@ -27,13 +27,24 @@ public class User {
     @Column(name = "full_name", nullable = false)
     private String fullName;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String email;
 
     private String phone;
 
-    @Column(name = "password_hash", nullable = false)
+    @Column(name = "password_hash")
     private String passwordHash;
+
+    @Column(name = "facebook_id", unique = true)
+    private String facebookId;
+
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
+    private String whatsapp;
+
+    @Column(name = "facebook_url")
+    private String facebookUrl;
 
     private String city;
 
@@ -59,6 +70,10 @@ public class User {
         if (createdAt == null) {
             createdAt = Instant.now();
         }
+    }
+
+    public boolean hasContact() {
+        return (whatsapp != null && !whatsapp.isBlank()) || (phone != null && !phone.isBlank());
     }
 
     public String getDisplayName() {

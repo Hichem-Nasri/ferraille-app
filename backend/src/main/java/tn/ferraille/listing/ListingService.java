@@ -12,8 +12,6 @@ import tn.ferraille.listing.ListingDtos.FitDto;
 import tn.ferraille.listing.ListingDtos.ListingDetail;
 import tn.ferraille.listing.ListingDtos.ListingRequest;
 import tn.ferraille.listing.ListingDtos.ListingSummary;
-import tn.ferraille.order.OrderRepository;
-import tn.ferraille.order.OrderStatus;
 import tn.ferraille.user.User;
 import tn.ferraille.user.UserRepository;
 
@@ -25,7 +23,6 @@ public class ListingService {
 
     private final ListingRepository listingRepository;
     private final UserRepository userRepository;
-    private final OrderRepository orderRepository;
 
     @Transactional(readOnly = true)
     public PageResponse<ListingSummary> search(ListingSpecifications.Filter filter, Pageable pageable) {
@@ -40,8 +37,8 @@ public class ListingService {
             throw ApiException.notFound("Annonce introuvable");
         }
         listingRepository.incrementViews(id);
-        long sales = orderRepository.countBySellerIdAndStatus(listing.getSeller().getId(), OrderStatus.COMPLETED);
-        return ListingDetail.from(listing, sales);
+        long count = listingRepository.countBySellerIdAndStatus(listing.getSeller().getId(), ListingStatus.ACTIVE);
+        return ListingDetail.from(listing, count);
     }
 
     @Transactional(readOnly = true)
@@ -54,6 +51,9 @@ public class ListingService {
     @Transactional
     public ListingDetail create(Long sellerId, ListingRequest request) {
         User seller = userRepository.findById(sellerId).orElseThrow(() -> ApiException.notFound("Utilisateur introuvable"));
+        if (!seller.hasContact()) {
+            throw ApiException.badRequest("Ajoute ton numéro WhatsApp ou de téléphone pour que les acheteurs puissent te contacter");
+        }
         Listing listing = new Listing();
         listing.setSeller(seller);
         apply(listing, request);
@@ -78,6 +78,13 @@ public class ListingService {
             throw ApiException.conflict("Une commande est en cours sur cette annonce");
         }
         listing.setStatus(ListingStatus.ARCHIVED);
+    }
+
+    @Transactional
+    public void recordContact(Long id) {
+        if (listingRepository.existsById(id)) {
+            listingRepository.incrementContactClicks(id);
+        }
     }
 
     public Listing require(Long id) {

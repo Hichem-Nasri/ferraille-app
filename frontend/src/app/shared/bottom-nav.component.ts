@@ -12,16 +12,13 @@ import { IconComponent } from './icon.component';
       <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
         <fr-icon name="home" [size]="24" />Accueil
       </a>
-      <a routerLink="/commandes" routerLinkActive="active">
-        <fr-icon name="box" [size]="24" />Commandes
+      <a routerLink="/mes-annonces" routerLinkActive="active">
+        <fr-icon name="list" [size]="24" />Annonces
       </a>
       <a routerLink="/vendre" class="sell" aria-label="Vendre une pièce">
         <fr-icon name="plus" [size]="26" [stroke]="2.6" />
       </a>
-      <a routerLink="/mes-annonces" routerLinkActive="active">
-        <fr-icon name="list" [size]="24" />Annonces
-      </a>
-      <a routerLink="/portefeuille" routerLinkActive="active">
+      <a routerLink="/profil" routerLinkActive="active">
         <fr-icon name="user" [size]="24" />Profil
       </a>
     </nav>

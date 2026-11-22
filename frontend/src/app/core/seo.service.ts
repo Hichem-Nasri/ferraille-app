@@ -14,7 +14,7 @@ export interface SeoData {
 
 export const SITE_NAME = 'Ferraille';
 export const DEFAULT_DESCRIPTION =
-  "Pièces détachées auto d'occasion en Tunisie : moteurs, phares, jantes, carrosserie, alternateurs. Particuliers et casses, livraison Aramex et La Poste, paiement protégé.";
+  "Pièces détachées auto d'occasion en Tunisie : moteurs, phares, jantes, carrosserie, alternateurs. Particuliers et casses, annonces gratuites, contact direct par WhatsApp.";
 
 @Injectable({ providedIn: 'root' })
 export class SeoService {

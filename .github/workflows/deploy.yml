@@ -105,6 +105,10 @@ jobs:
               } > .env
               echo "Fichier .env créé avec des secrets générés"
             fi
+            upsert() { [ -n "$2" ] || return 0; if grep -q "^$1=" .env; then sed -i "s|^$1=.*|$1=$2|" .env; else echo "$1=$2" >> .env; fi; }
+            upsert FACEBOOK_APP_ID '${{ vars.FACEBOOK_APP_ID }}'
+            upsert FACEBOOK_APP_SECRET '${{ secrets.FACEBOOK_APP_SECRET }}'
+            upsert FACEBOOK_GROUP_URL '${{ vars.FACEBOOK_GROUP_URL }}'
             REGISTRY="ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
             echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
             export REGISTRY TAG='${{ github.sha }}'

@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
-import { AuthResponse, SellerType, User } from './models';
+import { AuthConfig, AuthResponse, SellerType, User } from './models';
 
 const TOKEN_KEY = 'ferraille.token';
 const USER_KEY = 'ferraille.user';
@@ -30,6 +30,18 @@ export class AuthService {
 
   login(email: string, password: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>('/api/auth/login', { email, password }).pipe(tap((r) => this.store(r)));
+  }
+
+  facebookLogin(accessToken: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>('/api/auth/facebook', { accessToken }).pipe(tap((r) => this.store(r)));
+  }
+
+  config(): Observable<AuthConfig> {
+    return this.http.get<AuthConfig>('/api/auth/config');
+  }
+
+  deleteAccount(): Observable<void> {
+    return this.http.delete<void>('/api/me');
   }
 
   register(payload: RegisterPayload): Observable<AuthResponse> {

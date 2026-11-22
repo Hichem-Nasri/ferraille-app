@@ -67,6 +67,12 @@ public class ListingController {
         return listingService.mine(user.id(), PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 50)));
     }
 
+    @PostMapping("/{id:\\d+}/contact")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void contact(@PathVariable Long id) {
+        listingService.recordContact(id);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ListingDetail create(@AuthenticationPrincipal AuthenticatedUser user, @Valid @RequestBody ListingRequest request) {

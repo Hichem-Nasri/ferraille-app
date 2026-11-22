@@ -30,7 +30,7 @@ import { PartIconComponent } from '../shared/part-icon.component';
           </div>
         </div>
         @if (auth.isLoggedIn()) {
-          <a class="icon-btn mobile-only" routerLink="/commandes" aria-label="Mes commandes"><fr-icon name="bell" /></a>
+          <a class="icon-btn mobile-only" routerLink="/profil" aria-label="Mon profil"><fr-icon name="user" /></a>
         } @else {
           <a class="btn btn-ghost login mobile-only" routerLink="/connexion">Connexion</a>
         }
@@ -104,7 +104,7 @@ import { PartIconComponent } from '../shared/part-icon.component';
         <div class="ring"></div>
         <div class="stack grow">
           <span class="banner-title">Une pièce qui dort dans ton garage ?</span>
-          <span class="banner-text">Publie en 2 minutes. Aramex ou La Poste vient la récupérer chez toi.</span>
+          <span class="banner-text">Publie gratuitement en 2 minutes. Les acheteurs te contactent directement sur WhatsApp.</span>
         </div>
         <a class="btn btn-lime sell" routerLink="/vendre">Vendre</a>
       </div>
@@ -268,7 +268,7 @@ export class HomePage implements OnInit {
     if (meta) {
       this.seo.set({
         title: `Pièces ${meta.seo} d'occasion en Tunisie | ${SITE_NAME}`,
-        description: `Pièces ${meta.seo} d'occasion à vendre en Tunisie, par des particuliers et des casses. Livraison Aramex et La Poste partout en Tunisie, paiement protégé.`,
+        description: `Pièces ${meta.seo} d'occasion à vendre en Tunisie, par des particuliers et des casses. Annonces gratuites, contact direct avec le vendeur par WhatsApp.`,
         path: `/pieces/${meta.slug}`,
         jsonLd: [
           {

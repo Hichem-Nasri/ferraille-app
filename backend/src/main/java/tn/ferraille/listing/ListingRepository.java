@@ -23,6 +23,14 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
     List<Listing> findByStatusOrderByCreatedAtDesc(ListingStatus status, Pageable pageable);
 
     @Modifying
+    @Query("update Listing l set l.status = tn.ferraille.listing.ListingStatus.ARCHIVED where l.seller.id = :sellerId")
+    void archiveAllBySeller(@Param("sellerId") Long sellerId);
+
+    @Modifying
+    @Query("update Listing l set l.contactClicks = l.contactClicks + 1 where l.id = :id")
+    void incrementContactClicks(@Param("id") Long id);
+
+    @Modifying
     @Query("update Listing l set l.views = l.views + 1 where l.id = :id")
     void incrementViews(@Param("id") Long id);
 

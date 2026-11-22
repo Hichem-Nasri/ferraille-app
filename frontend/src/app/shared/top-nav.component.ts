@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { IconComponent } from './icon.component';
@@ -18,12 +18,18 @@ import { PartIconComponent } from './part-icon.component';
         </a>
         <nav aria-label="Navigation principale">
           <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Pièces</a>
+          @if (groupUrl()) {
+            <a [href]="groupUrl()" target="_blank" rel="noopener">Groupe Facebook</a>
+          }
           @if (auth.isLoggedIn()) {
-            <a routerLink="/commandes" routerLinkActive="active">Commandes</a>
             <a routerLink="/mes-annonces" routerLinkActive="active">Mes annonces</a>
-            <a routerLink="/portefeuille" routerLinkActive="active">Portefeuille</a>
             <a routerLink="/profil" routerLinkActive="active" class="profile">
-              <fr-icon name="user" [size]="18" />{{ auth.user()?.displayName }}
+              @if (auth.user()?.avatarUrl) {
+                <img class="mini-avatar" [src]="auth.user()?.avatarUrl" alt="" width="24" height="24">
+              } @else {
+                <fr-icon name="user" [size]="18" />
+              }
+              {{ auth.user()?.displayName }}
             </a>
           } @else {
             <a routerLink="/connexion" routerLinkActive="active">Connexion</a>
@@ -46,8 +52,14 @@ import { PartIconComponent } from './part-icon.component';
     nav a:not(.btn):hover { background: var(--ground); color: var(--ink); }
     nav a.active { color: var(--green); background: var(--green-soft); }
     .sell { height: 44px; font-size: 14px; margin-left: 8px; }
+    .mini-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
   `,
 })
 export class TopNavComponent {
   readonly auth = inject(AuthService);
+  readonly groupUrl = signal<string | null>(null);
+
+  constructor() {
+    this.auth.config().subscribe({ next: (c) => this.groupUrl.set(c.facebookGroupUrl ?? null), error: () => undefined });
+  }
 }

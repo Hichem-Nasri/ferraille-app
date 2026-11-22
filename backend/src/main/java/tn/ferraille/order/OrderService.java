@@ -52,6 +52,9 @@ public class OrderService {
     @org.springframework.beans.factory.annotation.Value("#{'${ferraille.payment-methods:A_LA_LIVRAISON}'.split(',')}")
     private List<PaymentMethod> enabledPaymentMethods;
 
+    @org.springframework.beans.factory.annotation.Value("${ferraille.orders-enabled:false}")
+    private boolean ordersEnabled;
+
     @Transactional
     public OrderDetail create(Long buyerId, CreateOrderRequest request) {
         User buyer = userRepository.findById(buyerId).orElseThrow(() -> ApiException.notFound("Utilisateur introuvable"));
@@ -63,6 +66,9 @@ public class OrderService {
             throw ApiException.badRequest("Tu ne peux pas acheter ta propre annonce");
         }
 
+        if (!ordersEnabled) {
+            throw ApiException.badRequest("Les commandes en ligne ne sont pas encore ouvertes : contacte directement le vendeur");
+        }
         if (!enabledPaymentMethods.contains(request.paymentMethod())) {
             throw ApiException.badRequest("Ce moyen de paiement n'est pas encore disponible : choisis le paiement à la livraison");
         }

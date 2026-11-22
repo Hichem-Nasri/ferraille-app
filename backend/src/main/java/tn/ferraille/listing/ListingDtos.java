@@ -51,21 +51,24 @@ public final class ListingDtos {
     }
 
     public record SellerSummary(Long id, String displayName, SellerType sellerType, boolean verified,
-                                String city, long salesCount) {
+                                String city, long listingsCount, String avatarUrl, String phone, String whatsapp,
+                                String facebookUrl, Instant memberSince) {
 
-        public static SellerSummary from(User u, long salesCount) {
-            return new SellerSummary(u.getId(), u.getDisplayName(), u.getSellerType(), u.isVerified(), u.getCity(), salesCount);
+        public static SellerSummary from(User u, long listingsCount) {
+            return new SellerSummary(u.getId(), u.getDisplayName(), u.getSellerType(), u.isVerified(), u.getCity(),
+                    listingsCount, u.getAvatarUrl(), u.getPhone(), u.getWhatsapp(), u.getFacebookUrl(), u.getCreatedAt());
         }
     }
 
     public record ListingSummary(Long id, String slug, String title, BigDecimal price, Category category, PartCondition condition,
                                  String city, String coverPhoto, SellerType sellerType, String fitsLabel,
-                                 ListingStatus status, Instant createdAt) {
+                                 ListingStatus status, int views, int contactClicks, Instant createdAt) {
 
         public static ListingSummary from(Listing l) {
             return new ListingSummary(l.getId(), Slugs.of(l.getTitle()), l.getTitle(), l.getPrice(), l.getCategory(), l.getCondition(),
                     l.getCity(), l.getPhotos().isEmpty() ? null : l.getPhotos().get(0),
-                    l.getSeller().getSellerType(), ListingDtos.fitsLabel(l.getFits()), l.getStatus(), l.getCreatedAt());
+                    l.getSeller().getSellerType(), ListingDtos.fitsLabel(l.getFits()), l.getStatus(), l.getViews(), l.getContactClicks(),
+                    l.getCreatedAt());
         }
     }
 

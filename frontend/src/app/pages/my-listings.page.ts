@@ -33,7 +33,7 @@ import { PartIconComponent } from '../shared/part-icon.component';
               </a>
               <a class="stack grow info" [routerLink]="['/piece', l.id, l.slug]">
                 <span class="title">{{ l.title }}</span>
-                <span class="muted small">{{ l.price | dinar }} · {{ statusLabel(l.status) }}</span>
+                <span class="muted small">{{ l.price | dinar }} · {{ statusLabel(l.status) }} · {{ l.views }} vues · {{ l.contactClicks }} contact{{ l.contactClicks > 1 ? 's' : '' }}</span>
               </a>
               @if (l.status === 'ACTIVE') {
                 <button type="button" class="icon-btn" (click)="archive(l)" [attr.aria-label]="'Retirer ' + l.title">

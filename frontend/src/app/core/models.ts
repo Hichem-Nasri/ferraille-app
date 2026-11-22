@@ -39,13 +39,24 @@ export interface User {
   id: number;
   fullName: string;
   displayName: string;
-  email: string;
+  email?: string;
   phone?: string;
+  whatsapp?: string;
+  facebookUrl?: string;
+  avatarUrl?: string;
+  facebookLinked: boolean;
+  hasPassword: boolean;
+  hasContact: boolean;
   city?: string;
   role: 'USER' | 'ADMIN';
   sellerType: SellerType;
   shopName?: string;
   verified: boolean;
+}
+
+export interface AuthConfig {
+  facebookAppId?: string;
+  facebookGroupUrl?: string;
 }
 
 export interface AuthResponse {
@@ -72,6 +83,8 @@ export interface ListingSummary {
   sellerType: SellerType;
   fitsLabel?: string;
   status: ListingStatus;
+  views: number;
+  contactClicks: number;
   createdAt: string;
 }
 
@@ -81,7 +94,12 @@ export interface SellerSummary {
   sellerType: SellerType;
   verified: boolean;
   city?: string;
-  salesCount: number;
+  listingsCount: number;
+  avatarUrl?: string;
+  phone?: string;
+  whatsapp?: string;
+  facebookUrl?: string;
+  memberSince?: string;
 }
 
 export interface ListingDetail {

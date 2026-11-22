@@ -72,6 +72,9 @@ public class Listing {
     @Column(nullable = false)
     private int views;
 
+    @Column(name = "contact_clicks", nullable = false)
+    private int contactClicks;
+
     @ElementCollection
     @CollectionTable(name = "listing_photos", joinColumns = @JoinColumn(name = "listing_id"))
     @OrderColumn(name = "position")

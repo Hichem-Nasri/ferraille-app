@@ -1,20 +1,18 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { EMPTY, Subject, catchError, debounceTime, switchMap } from 'rxjs';
+import { Observable, of, switchMap } from 'rxjs';
 import { ApiService, errorMessage } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
-import { DinarPipe } from '../core/dinar.pipe';
 import { CATEGORIES, CITIES, CONDITIONS, MAKES } from '../core/labels';
-import { Category, PartCondition, SellerQuote, VehicleFit } from '../core/models';
+import { Category, PartCondition, User, VehicleFit } from '../core/models';
 import { IconComponent } from '../shared/icon.component';
 import { PartIconComponent } from '../shared/part-icon.component';
 
 @Component({
   selector: 'fr-sell-page',
   standalone: true,
-  imports: [FormsModule, RouterLink, DinarPipe, IconComponent, PartIconComponent],
+  imports: [FormsModule, RouterLink, IconComponent, PartIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form class="page" (ngSubmit)="submit()" #f="ngForm">
@@ -145,13 +143,20 @@ import { PartIconComponent } from '../shared/part-icon.component';
         <span>Prix négociable</span>
       </label>
 
-      @if (quote(); as q) {
-        <div class="dark-card stack quote">
-          <div class="row between line"><span>Prix de vente</span><span>{{ q.price | dinar: true }}</span></div>
-          <div class="row between line"><span>Commission Ferraille ({{ percent(q.commissionRate) }} %)</span><span>− {{ q.commission | dinar: true }}</span></div>
-          <div class="sep"></div>
-          <div class="row between"><span class="strong">Tu recevras</span><span class="price net">{{ q.sellerNet | dinar }}</span></div>
-          <span class="line small">Livraison payée par l'acheteur. Le coursier passe récupérer le colis chez toi.</span>
+      @if (needsContact()) {
+        <div class="card card-pad stack contact-box">
+          <span class="strong">Comment les acheteurs te contactent ?</span>
+          <div class="field">
+            <label for="wa">Ton numéro WhatsApp</label>
+            <input id="wa" class="input" type="tel" name="whatsapp" [(ngModel)]="whatsapp" required
+                   pattern="^[+0-9 ]{8,20}$" placeholder="+216 98 123 456" autocomplete="tel">
+          </div>
+          <span class="muted small">Il s'affichera sur tes annonces. Tu pourras le modifier dans ton profil.</span>
+        </div>
+      } @else {
+        <div class="notice">
+          <fr-icon name="chat" [size]="18" />
+          <span>Annonce <strong>gratuite</strong>. Les acheteurs te contacteront directement{{ contactLabel() }}.</span>
         </div>
       }
 
@@ -188,18 +193,14 @@ import { PartIconComponent } from '../shared/part-icon.component';
     .price-input span { font-weight: 700; color: var(--muted); }
     .check { gap: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
     .check input { width: 20px; height: 20px; accent-color: var(--green); }
-    .quote { gap: 10px; }
-    .line { font-size: 13px; color: #c9d8cf; }
-    .sep { height: 1px; background: rgba(255, 255, 255, 0.14); }
     .strong { font-size: 14px; font-weight: 600; }
-    .net { font-size: 22px; color: var(--lime); }
+    .contact-box { gap: 10px; }
   `,
 })
 export class SellPage implements OnInit {
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly destroyRef = inject(DestroyRef);
 
   readonly categories = CATEGORIES;
   readonly conditions = CONDITIONS;
@@ -211,7 +212,6 @@ export class SellPage implements OnInit {
   readonly condition = signal<PartCondition>('TRES_BON');
   readonly fits = signal<VehicleFit[]>([]);
   readonly fitFormOpen = signal(false);
-  readonly quote = signal<SellerQuote | null>(null);
   readonly uploading = signal(false);
   readonly saving = signal(false);
   readonly error = signal<string | null>(null);
@@ -237,29 +237,24 @@ export class SellPage implements OnInit {
   fitFrom: number | null = null;
   fitTo: number | null = null;
 
-  private readonly prices = new Subject<number>();
+  whatsapp = '';
+  readonly needsContact = computed(() => !this.auth.user()?.hasContact);
+  readonly contactLabel = computed(() => {
+    const u = this.auth.user();
+    if (u?.whatsapp) return ` sur WhatsApp (${u.whatsapp})`;
+    if (u?.phone) return ` au ${u.phone}`;
+    return '';
+  });
 
   ngOnInit(): void {
     const userCity = this.auth.user()?.city;
     if (userCity && CITIES.includes(userCity)) {
       this.city = userCity;
     }
-    this.prices
-      .pipe(
-        debounceTime(300),
-        switchMap((p) => this.api.sellerQuote(p).pipe(catchError(() => EMPTY))),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe((q) => this.quote.set(q));
   }
 
   onPrice(value: number | null): void {
     this.priceValue.set(value);
-    if (value && value > 0) {
-      this.prices.next(value);
-    } else {
-      this.quote.set(null);
-    }
   }
 
   upload(event: Event): void {
@@ -303,10 +298,6 @@ export class SellPage implements OnInit {
     this.fits.set(this.fits().filter((_, i) => i !== index));
   }
 
-  percent(rate: number): number {
-    return Math.round(rate * 1000) / 10;
-  }
-
   fitLabel(f: VehicleFit): string {
     const years = f.yearFrom || f.yearTo ? ` · ${f.yearFrom ?? '…'}–${f.yearTo ?? '…'}` : '';
     return `${f.make} ${f.model}${years}`;
@@ -319,8 +310,8 @@ export class SellPage implements OnInit {
     }
     this.saving.set(true);
     this.error.set(null);
-    this.api
-      .createListing({
+    this.ensureContact()
+      .pipe(switchMap(() => this.api.createListing({
         title: this.title,
         description: this.description || undefined,
         category,
@@ -331,7 +322,7 @@ export class SellPage implements OnInit {
         oemReference: this.oemReference || undefined,
         photos: this.photos(),
         fits: this.fits(),
-      })
+      })))
       .subscribe({
         next: (l) => this.router.navigate(['/piece', l.id, l.slug]),
         error: (e) => {
@@ -339,5 +330,28 @@ export class SellPage implements OnInit {
           this.saving.set(false);
         },
       });
+  }
+
+  private ensureContact(): Observable<User | null> {
+    const user = this.auth.user();
+    if (!user || user.hasContact) {
+      return of(null);
+    }
+    return this.api
+      .updateProfile({
+        fullName: user.fullName,
+        phone: user.phone,
+        whatsapp: this.whatsapp.trim(),
+        facebookUrl: user.facebookUrl,
+        city: user.city ?? this.city,
+        sellerType: user.sellerType,
+        shopName: user.shopName,
+      })
+      .pipe(
+        switchMap((updated) => {
+          this.auth.setUser(updated);
+          return of(updated);
+        }),
+      );
   }
 }
