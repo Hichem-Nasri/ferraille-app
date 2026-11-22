@@ -1,0 +1,5 @@
+package tn.ferraille.listing;
+
+public enum Category {
+    MOTEUR, CARROSSERIE, ECLAIRAGE, JANTES_PNEUS, ELECTRICITE, INTERIEUR, FREINAGE, TRANSMISSION, AUTRE
+}

@@ -1,0 +1,68 @@
+name: ferraille
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ferraille
+      POSTGRES_USER: ferraille
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD manquant dans .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ferraille -d ferraille"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    image: ${REGISTRY:-ghcr.io/local}/ferraille-api:${TAG:-latest}
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/ferraille
+      DB_USER: ferraille
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET manquant dans .env}
+      CORS_ORIGINS: ${PUBLIC_URL:-http://localhost}
+      DEMO_DATA: ${DEMO_DATA:-false}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      COMMISSION_RATE: ${COMMISSION_RATE:-0.10}
+      PROTECTION_FEE: ${PROTECTION_FEE:-4.000}
+      ARAMEX_FEE: ${ARAMEX_FEE:-8.000}
+      LAPOSTE_FEE: ${LAPOSTE_FEE:-7.000}
+    volumes:
+      - uploads:/app/uploads
+
+  frontend:
+    image: ${REGISTRY:-ghcr.io/local}/ferraille-web:${TAG:-latest}
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-:80}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  db-data:
+  uploads:
+  caddy-data:
+  caddy-config:
