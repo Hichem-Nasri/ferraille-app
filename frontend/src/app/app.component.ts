@@ -3,12 +3,13 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import { SITE_NAME, SeoService } from './core/seo.service';
+import { TopNavComponent } from './shared/top-nav.component';
 
 @Component({
   selector: 'fr-root',
   standalone: true,
-  imports: [RouterOutlet],
-  template: `<div class="app-shell"><router-outlet /></div>`,
+  imports: [RouterOutlet, TopNavComponent],
+  template: `<div class="app-shell"><fr-top-nav /><router-outlet /></div>`,
 })
 export class AppComponent {
   private readonly router = inject(Router);

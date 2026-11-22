@@ -21,6 +21,7 @@ import { PartIconComponent } from '../shared/part-icon.component';
       <div class="page"><div class="error">{{ error() }}</div><a routerLink="/">Retour à l'accueil</a></div>
     }
     @if (listing(); as l) {
+      <div class="detail">
       <div class="hero" [style.background]="meta().tint" [style.color]="meta().tone">
         @if (l.photos.length) {
           <img [src]="l.photos[photoIndex()]" [alt]="l.title + ' — photo ' + (photoIndex() + 1)" fetchpriority="high">
@@ -114,8 +115,9 @@ import { PartIconComponent } from '../shared/part-icon.component';
           <span class="muted"><strong class="ink">Protection Ferraille</strong> — ton argent est bloqué jusqu'à ce que tu confirmes que la pièce est conforme.</span>
         </div>
       </div>
+      </div>
 
-      <div class="bottom-bar">
+      <div class="bottom-bar wide">
         @if (isOwner()) {
           <a class="btn btn-ghost grow" routerLink="/mes-annonces">C'est ton annonce</a>
         } @else if (l.status !== 'ACTIVE') {
@@ -162,6 +164,13 @@ import { PartIconComponent } from '../shared/part-icon.component';
     .green { color: var(--green); }
     .ink { color: var(--ink); }
     .lime { color: var(--lime); }
+    @media (min-width: 900px) {
+      .detail { max-width: 1240px; margin: 0 auto; padding: 32px 32px 140px; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 40px; align-items: start; }
+      .hero { height: 560px; border-radius: 28px; position: sticky; top: 104px; }
+      .sheet { margin: 0; border-radius: 0; padding: 0 0 40px; max-width: none; background: transparent; }
+      .title { font-size: 32px; }
+      .big { font-size: 36px; }
+    }
   `,
 })
 export class ListingDetailPage implements OnInit {

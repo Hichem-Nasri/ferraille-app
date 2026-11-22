@@ -27,8 +27,9 @@ import { IconComponent } from './icon.component';
     </nav>
   `,
   styles: `
+    @media (min-width: 900px) { :host { display: none; } }
     nav {
-      position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; width: 100%; max-width: 480px;
+      position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; width: 100%;
       height: calc(78px + env(safe-area-inset-bottom)); background: var(--white); border-top: 1px solid var(--line);
       display: flex; align-items: flex-start; justify-content: space-around; padding-top: 10px; z-index: 20;
     }

@@ -20,22 +20,23 @@ import { PartIconComponent } from '../shared/part-icon.component';
   imports: [FormsModule, RouterLink, IconComponent, PartIconComponent, ListingCardComponent, BottomNavComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="page">
-      <header class="row between">
+    <div class="page wide">
+      <header class="row between home-header">
         <div class="row brand">
-          <div class="logo"><fr-part-icon name="gear" [size]="22" [stroke]="5" /></div>
+          <div class="logo mobile-only"><fr-part-icon name="gear" [size]="22" [stroke]="5" /></div>
           <div class="stack">
-            <span class="wordmark">ferraille</span>
+            <span class="wordmark mobile-only">ferraille</span>
             <h1 class="tagline">{{ heading() }}</h1>
           </div>
         </div>
         @if (auth.isLoggedIn()) {
-          <a class="icon-btn" routerLink="/commandes" aria-label="Mes commandes"><fr-icon name="bell" /></a>
+          <a class="icon-btn mobile-only" routerLink="/commandes" aria-label="Mes commandes"><fr-icon name="bell" /></a>
         } @else {
-          <a class="btn btn-ghost login" routerLink="/connexion">Connexion</a>
+          <a class="btn btn-ghost login mobile-only" routerLink="/connexion">Connexion</a>
         }
       </header>
 
+      <div class="search-zone">
       <form class="row" (ngSubmit)="search()">
         <label class="search">
           <fr-icon name="search" />
@@ -54,6 +55,7 @@ import { PartIconComponent } from '../shared/part-icon.component';
           <span class="garage-label">{{ garage.vehicle() ? garage.label() : 'Ajoute ta voiture pour filtrer' }}</span>
         </div>
         <button type="button" class="link" (click)="garageOpen.set(true)">{{ garage.vehicle() ? 'Changer' : 'Ajouter' }}</button>
+      </div>
       </div>
 
       @if (garageOpen()) {
@@ -117,7 +119,7 @@ import { PartIconComponent } from '../shared/part-icon.component';
         } @else if (listings().length === 0) {
           <div class="empty card">Aucune pièce trouvée pour le moment.</div>
         } @else {
-          <div class="grid-2">
+          <div class="listing-grid">
             @for (l of listings(); track l.id) { <fr-listing-card [listing]="l" /> }
           </div>
           @if (hasMore()) {
@@ -152,6 +154,19 @@ import { PartIconComponent } from '../shared/part-icon.component';
     .banner-title { font-family: var(--display); font-size: 19px; font-weight: 700; line-height: 1.2; position: relative; }
     .banner-text { font-size: 13px; color: #c9d8cf; line-height: 1.4; position: relative; }
     .sell { height: 44px; position: relative; flex-shrink: 0; }
+    .search-zone { display: flex; flex-direction: column; gap: 18px; }
+    @media (min-width: 900px) {
+      .home-header { padding-top: 8px; }
+      .tagline { font-family: var(--display); font-size: 34px; font-weight: 700; letter-spacing: -0.8px; color: var(--ink); margin: 0; }
+      .search-zone { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; align-items: stretch; }
+      .search-zone .card { padding: 0 16px; }
+      .categories { flex-wrap: wrap; overflow: visible; margin-right: 0; padding-right: 0; gap: 12px; }
+      .category { width: 104px; }
+      .cat-icon { width: 72px; height: 72px; }
+      .banner { padding: 28px 32px; }
+      .banner-title { font-size: 24px; }
+      .banner-text { font-size: 15px; }
+    }
   `,
 })
 export class HomePage implements OnInit {

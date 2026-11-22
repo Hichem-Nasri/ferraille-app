@@ -258,7 +258,7 @@ public class SeoService {
         for (Object ld : page.jsonLd()) {
             head.append("<script type=\"application/ld+json\">").append(json(ld)).append("</script>\n");
         }
-        head.append("<style>fr-root>.seo{display:block;max-width:480px;margin:0 auto;padding:20px;font-family:Inter,system-ui,sans-serif;color:#0B1F17;line-height:1.5}")
+        head.append("<style>fr-root>.seo{display:block;max-width:1240px;margin:0 auto;padding:20px;font-family:Inter,system-ui,sans-serif;color:#0B1F17;line-height:1.5}")
                 .append("fr-root>.seo img{max-width:100%;height:auto;border-radius:16px}fr-root>.seo a{color:#0F7A45}</style>\n");
 
         String html = TITLE.matcher(template).replaceAll("");
