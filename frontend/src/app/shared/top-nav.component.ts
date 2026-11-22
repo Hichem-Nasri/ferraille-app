@@ -23,6 +23,9 @@ import { PartIconComponent } from './part-icon.component';
           }
           @if (auth.isLoggedIn()) {
             <a routerLink="/mes-annonces" routerLinkActive="active">Mes annonces</a>
+            @if (auth.user()?.role === 'ADMIN') {
+              <a routerLink="/admin" routerLinkActive="active">Admin</a>
+            }
             <a routerLink="/profil" routerLinkActive="active" class="profile">
               @if (auth.user()?.avatarUrl) {
                 <img class="mini-avatar" [src]="auth.user()?.avatarUrl" alt="" width="24" height="24">

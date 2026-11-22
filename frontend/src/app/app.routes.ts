@@ -13,6 +13,7 @@ export const routes: Routes = [
   { path: 'portefeuille', redirectTo: 'profil' },
   { path: 'commandes', redirectTo: 'mes-annonces' },
   { path: 'profil', data: { title: 'Mon profil', noindex: true }, canActivate: [authGuard], loadComponent: () => import('./pages/profile.page').then((m) => m.ProfilePage) },
+  { path: 'admin', data: { title: 'Administration', noindex: true }, canActivate: [authGuard], loadComponent: () => import('./pages/admin.page').then((m) => m.AdminPage) },
   { path: 'confidentialite', data: { title: 'Politique de confidentialité' }, loadComponent: () => import('./pages/legal.page').then((m) => m.PrivacyPage) },
   { path: 'suppression-donnees', data: { title: 'Suppression de tes données' }, loadComponent: () => import('./pages/legal.page').then((m) => m.DataDeletionPage) },
   { path: '**', redirectTo: '' },

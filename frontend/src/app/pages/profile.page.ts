@@ -106,6 +106,9 @@ import { IconComponent } from '../shared/icon.component';
       </form>
       }
 
+      @if (isAdmin) {
+        <a class="btn btn-primary btn-block" routerLink="/admin">Administration · inscrits</a>
+      }
       <button type="button" class="btn btn-ghost btn-block logout" (click)="logout()">
         <fr-icon name="logout" [size]="18" />Se déconnecter
       </button>
@@ -142,6 +145,7 @@ export class ProfilePage implements OnInit {
   avatarUrl: string | null = null;
   facebookLinked = false;
   hasPassword = false;
+  isAdmin = false;
   sellerType: SellerType = 'PARTICULIER';
   shopName = '';
   fullName = '';
@@ -171,6 +175,7 @@ export class ProfilePage implements OnInit {
       this.avatarUrl = user.avatarUrl ?? null;
       this.facebookLinked = user.facebookLinked;
       this.hasPassword = user.hasPassword;
+      this.isAdmin = user.role === 'ADMIN';
       this.city = user.city ?? 'Tunis';
     }
   }

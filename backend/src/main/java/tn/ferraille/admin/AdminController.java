@@ -27,6 +27,25 @@ public class AdminController {
 
     private final OrderService orderService;
     private final WalletService walletService;
+    private final tn.ferraille.user.UserRepository userRepository;
+    private final tn.ferraille.listing.ListingRepository listingRepository;
+
+    public record AdminUser(Long id, String fullName, String email, String phone, String whatsapp, String facebookUrl,
+                            String city, String sellerType, String shopName, String role, boolean facebook,
+                            long activeListings, java.time.Instant createdAt) {
+    }
+
+    @GetMapping("/users")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public java.util.List<AdminUser> users() {
+        return userRepository.findAll(org.springframework.data.domain.Sort.by("createdAt").descending()).stream()
+                .map(u -> new AdminUser(u.getId(), u.getFullName(), u.getEmail(), u.getPhone(), u.getWhatsapp(),
+                        u.getFacebookUrl(), u.getCity(), u.getSellerType().name(), u.getShopName(), u.getRole().name(),
+                        u.getFacebookId() != null,
+                        listingRepository.countBySellerIdAndStatus(u.getId(), tn.ferraille.listing.ListingStatus.ACTIVE),
+                        u.getCreatedAt()))
+                .toList();
+    }
 
     @GetMapping("/orders")
     public PageResponse<OrderSummary> orders(@RequestParam OrderStatus status,
