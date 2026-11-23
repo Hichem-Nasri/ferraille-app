@@ -3,6 +3,20 @@ import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { errorMessage } from '../core/api.service';
 
+interface VisitSummary {
+  visitsToday: number;
+  visitorsToday: number;
+  visits7d: number;
+  visitors7d: number;
+  visits30d: number;
+  visitors30d: number;
+  visitsTotal: number;
+  daily: { day: string; visits: number; visitors: number }[];
+  topPages: { path: string; visits: number }[];
+  topReferrers: { source: string; visitors: number }[];
+  devices: { device: string; visitors: number }[];
+}
+
 interface AdminUser {
   id: number;
   fullName: string;
@@ -28,6 +42,43 @@ interface AdminUser {
     <div class="page wide">
       <h1 class="h1">Administration</h1>
       @if (error()) { <div class="error">{{ error() }}</div> }
+
+      @if (visits(); as v) {
+        <h2 class="section-title">Visites</h2>
+        <div class="stats">
+          <div class="card stat"><span class="value">{{ v.visitorsToday }}</span><span class="muted small">Visiteurs aujourd'hui</span><span class="muted small">{{ v.visitsToday }} pages vues</span></div>
+          <div class="card stat"><span class="value">{{ v.visitors7d }}</span><span class="muted small">Visiteurs · 7 jours</span><span class="muted small">{{ v.visits7d }} pages vues</span></div>
+          <div class="card stat"><span class="value">{{ v.visitors30d }}</span><span class="muted small">Visiteurs · 30 jours</span><span class="muted small">{{ v.visits30d }} pages vues</span></div>
+          <div class="card stat"><span class="value">{{ v.visitsTotal }}</span><span class="muted small">Pages vues au total</span></div>
+        </div>
+        @if (v.daily.length) {
+          <div class="card card-pad chart">
+            <span class="muted small">Visiteurs par jour (30 jours)</span>
+            <div class="bars">
+              @for (d of v.daily; track d.day) {
+                <div class="bar-col" [title]="d.day + ' : ' + d.visitors + ' visiteurs, ' + d.visits + ' pages'">
+                  <span class="bar-value">{{ d.visitors }}</span>
+                  <div class="bar" [style.height.%]="barHeight(d.visitors)"></div>
+                  <span class="bar-label">{{ d.day.slice(8) }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+        <div class="grid-lists">
+          <div class="card card-pad">
+            <span class="list-title">Pages les plus vues</span>
+            @for (p of v.topPages; track p.path) { <div class="line"><span class="ellipsis">{{ p.path }}</span><strong>{{ p.visits }}</strong></div> }
+          </div>
+          <div class="card card-pad">
+            <span class="list-title">D'où viennent les visiteurs</span>
+            @for (r of v.topReferrers; track r.source) { <div class="line"><span>{{ r.source }}</span><strong>{{ r.visitors }}</strong></div> }
+            <span class="list-title spaced">Appareils</span>
+            @for (d of v.devices; track d.device) { <div class="line"><span>{{ d.device }}</span><strong>{{ d.visitors }}</strong></div> }
+          </div>
+        </div>
+        <h2 class="section-title">Inscrits</h2>
+      }
       <div class="stats">
         <div class="card stat"><span class="value">{{ realUsers().length }}</span><span class="muted small">Inscrits réels</span></div>
         <div class="card stat"><span class="value">{{ todayCount() }}</span><span class="muted small">Aujourd'hui</span></div>
@@ -61,6 +112,17 @@ interface AdminUser {
   `,
   styles: `
     .h1 { font-size: 28px; }
+    .chart { display: flex; flex-direction: column; gap: 10px; }
+    .bars { display: flex; align-items: flex-end; gap: 4px; height: 160px; }
+    .bar-col { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; }
+    .bar { width: 100%; max-width: 28px; min-height: 2px; background: var(--green); border-radius: 6px 6px 0 0; }
+    .bar-value { font-size: 10px; color: var(--muted); }
+    .bar-label { font-size: 10px; color: var(--muted); }
+    .grid-lists { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+    .list-title { display: block; font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+    .spaced { margin-top: 14px; }
+    .line { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); font-size: 14px; }
+    .ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
     .stat { padding: 14px; display: flex; flex-direction: column; gap: 2px; border-radius: 16px; }
     .value { font-family: var(--display); font-size: 28px; font-weight: 700; }
@@ -75,6 +137,7 @@ export class AdminPage implements OnInit {
   private readonly http = inject(HttpClient);
 
   readonly users = signal<AdminUser[]>([]);
+  readonly visits = signal<VisitSummary | null>(null);
   readonly error = signal<string | null>(null);
 
   readonly realUsers = computed(() =>
@@ -87,7 +150,13 @@ export class AdminPage implements OnInit {
   readonly facebookCount = computed(() => this.realUsers().filter((u) => u.facebook).length);
   readonly sellersCount = computed(() => this.realUsers().filter((u) => u.activeListings > 0).length);
 
+  barHeight(value: number): number {
+    const max = Math.max(1, ...(this.visits()?.daily ?? []).map((d) => d.visitors));
+    return (value / max) * 85;
+  }
+
   ngOnInit(): void {
+    this.http.get<VisitSummary>('/api/admin/visits').subscribe({ next: (v) => this.visits.set(v), error: () => undefined });
     this.http.get<AdminUser[]>('/api/admin/users').subscribe({
       next: (u) => this.users.set(u),
       error: (e) =>

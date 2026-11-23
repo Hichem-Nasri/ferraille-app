@@ -40,6 +40,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**", "/actuator/health/**", "/error", "/seo/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/listings", "/api/listings/{id:\\d+}", "/api/pricing/**", "/api/shipping/**", "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/listings/{id:\\d+}/contact").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/visits").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

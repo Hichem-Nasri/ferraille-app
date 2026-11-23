@@ -1,3 +1,4 @@
+import { HttpClient } from '@angular/common/http';
 import { Component, DestroyRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterOutlet } from '@angular/router';
@@ -14,6 +15,8 @@ import { TopNavComponent } from './shared/top-nav.component';
 export class AppComponent {
   private readonly router = inject(Router);
   private readonly seo = inject(SeoService);
+  private readonly http = inject(HttpClient);
+  private firstVisit = true;
 
   constructor() {
     this.router.events
@@ -21,7 +24,8 @@ export class AppComponent {
         filter((e): e is NavigationEnd => e instanceof NavigationEnd),
         takeUntilDestroyed(inject(DestroyRef)),
       )
-      .subscribe(() => {
+      .subscribe((event) => {
+        this.trackVisit(event.urlAfterRedirects);
         let route: ActivatedRouteSnapshot = this.router.routerState.snapshot.root;
         while (route.firstChild) {
           route = route.firstChild;
@@ -31,5 +35,15 @@ export class AppComponent {
           this.seo.set({ title: `${title} | ${SITE_NAME}`, noindex: route.data['noindex'] === true });
         }
       });
+  }
+
+  private trackVisit(url: string): void {
+    const path = url.split(/[?#]/)[0];
+    if (path.startsWith('/admin')) {
+      return;
+    }
+    const referrer = this.firstVisit ? document.referrer : '';
+    this.firstVisit = false;
+    this.http.post('/api/visits', { path, referrer }).subscribe({ error: () => undefined });
   }
 }
