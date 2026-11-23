@@ -3,6 +3,7 @@ import { Component, DestroyRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
+import { AuthService } from './core/auth.service';
 import { SITE_NAME, SeoService } from './core/seo.service';
 import { TopNavComponent } from './shared/top-nav.component';
 
@@ -16,6 +17,7 @@ export class AppComponent {
   private readonly router = inject(Router);
   private readonly seo = inject(SeoService);
   private readonly http = inject(HttpClient);
+  private readonly auth = inject(AuthService);
   private firstVisit = true;
 
   constructor() {
@@ -39,11 +41,20 @@ export class AppComponent {
 
   private trackVisit(url: string): void {
     const path = url.split(/[?#]/)[0];
-    if (path.startsWith('/admin')) {
+    const params = new URLSearchParams(url.includes('?') ? url.split('?')[1].split('#')[0] : '');
+    const src = params.get('src') ?? params.get('utm_source');
+    if (src) {
+      sessionStorage.setItem('ferraille.src', src);
+    }
+    if (this.auth.user()?.role === 'ADMIN') {
+      localStorage.setItem('ferraille.noTrack', '1');
+    }
+    if (path.startsWith('/admin') || localStorage.getItem('ferraille.noTrack') === '1') {
       return;
     }
     const referrer = this.firstVisit ? document.referrer : '';
     this.firstVisit = false;
-    this.http.post('/api/visits', { path, referrer }).subscribe({ error: () => undefined });
+    const source = sessionStorage.getItem('ferraille.src') ?? undefined;
+    this.http.post('/api/visits', { path, referrer, source }).subscribe({ error: () => undefined });
   }
 }

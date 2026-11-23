@@ -11,6 +11,9 @@ interface VisitSummary {
   visits30d: number;
   visitors30d: number;
   visitsTotal: number;
+  buyersToday: number;
+  buyers7d: number;
+  sources: { source: string; visitors: number; visits: number }[];
   daily: { day: string; visits: number; visitors: number }[];
   topPages: { path: string; visits: number }[];
   topReferrers: { source: string; visitors: number }[];
@@ -49,7 +52,7 @@ interface AdminUser {
           <div class="card stat"><span class="value">{{ v.visitorsToday }}</span><span class="muted small">Visiteurs aujourd'hui</span><span class="muted small">{{ v.visitsToday }} pages vues</span></div>
           <div class="card stat"><span class="value">{{ v.visitors7d }}</span><span class="muted small">Visiteurs · 7 jours</span><span class="muted small">{{ v.visits7d }} pages vues</span></div>
           <div class="card stat"><span class="value">{{ v.visitors30d }}</span><span class="muted small">Visiteurs · 30 jours</span><span class="muted small">{{ v.visits30d }} pages vues</span></div>
-          <div class="card stat"><span class="value">{{ v.visitsTotal }}</span><span class="muted small">Pages vues au total</span></div>
+          <div class="card stat"><span class="value">{{ v.buyersToday }}</span><span class="muted small">Acheteurs aujourd'hui</span><span class="muted small">{{ v.buyers7d }} sur 7 jours</span></div>
         </div>
         @if (v.daily.length) {
           <div class="card card-pad chart">
@@ -71,7 +74,10 @@ interface AdminUser {
             @for (p of v.topPages; track p.path) { <div class="line"><span class="ellipsis">{{ p.path }}</span><strong>{{ p.visits }}</strong></div> }
           </div>
           <div class="card card-pad">
-            <span class="list-title">D'où viennent les visiteurs</span>
+            <span class="list-title">Campagnes (?src=…)</span>
+            @for (s of v.sources; track s.source) { <div class="line"><span>{{ s.source }}</span><strong>{{ s.visitors }}</strong></div> }
+            @empty { <span class="muted small">Ajoute ?src=fb, ?src=tiktok ou ?src=groupe à tes liens partagés.</span> }
+            <span class="list-title spaced">Sites d'origine</span>
             @for (r of v.topReferrers; track r.source) { <div class="line"><span>{{ r.source }}</span><strong>{{ r.visitors }}</strong></div> }
             <span class="list-title spaced">Appareils</span>
             @for (d of v.devices; track d.device) { <div class="line"><span>{{ d.device }}</span><strong>{{ d.visitors }}</strong></div> }
@@ -107,6 +113,7 @@ interface AdminUser {
           </tbody>
         </table>
       </div>
+      <span class="muted small">Tes propres visites ne sont plus comptées sur les appareils où tu t'es connecté en admin. « Acheteurs » = visiteurs uniques de l'accueil, des catégories et des fiches pièces. </span>
       <span class="muted small">Les comptes de démo (&#64;demo.ferraille.tn) et les comptes supprimés sont masqués.</span>
     </div>
   `,

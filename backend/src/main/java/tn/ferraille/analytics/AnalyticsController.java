@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AnalyticsController {
 
-    public record VisitRequest(String path, String referrer) {
+    public record VisitRequest(String path, String referrer, String source) {
     }
 
     private final AnalyticsService analyticsService;
@@ -24,7 +24,7 @@ public class AnalyticsController {
     public void visit(@RequestBody VisitRequest request, HttpServletRequest http) {
         String forwarded = http.getHeader("X-Forwarded-For");
         String ip = forwarded != null && !forwarded.isBlank() ? forwarded.split(",")[0].trim() : http.getRemoteAddr();
-        analyticsService.record(request.path(), request.referrer(), ip, http.getHeader(HttpHeaders.USER_AGENT));
+        analyticsService.record(request.path(), request.referrer(), request.source(), ip, http.getHeader(HttpHeaders.USER_AGENT));
     }
 
     @GetMapping("/api/admin/visits")

@@ -24,10 +24,14 @@ public class AnalyticsService {
             "(?i)bot|crawl|spider|slurp|facebookexternalhit|whatsapp|preview|headless|lighthouse|curl|wget|python|java/|go-http|monitor");
 
     public record Summary(long visitsToday, long visitorsToday, long visits7d, long visitors7d, long visits30d,
-                          long visitors30d, long visitsTotal, List<Map<String, Object>> daily,
+                          long visitors30d, long visitsTotal, long buyersToday, long buyers7d,
+                          List<Map<String, Object>> daily, List<Map<String, Object>> sources,
                           List<Map<String, Object>> topPages, List<Map<String, Object>> topReferrers,
                           List<Map<String, Object>> devices) {
     }
+
+    private static final String BUYER_PAGES =
+            "(path = '/' or path like '/piece/%' or path like '/pieces/%')";
 
     private final JdbcTemplate jdbc;
     private final byte[] secret = new byte[32];
@@ -39,7 +43,7 @@ public class AnalyticsService {
         new SecureRandom().nextBytes(secret);
     }
 
-    public void record(String path, String referrer, String ip, String userAgent) {
+    public void record(String path, String referrer, String source, String ip, String userAgent) {
         if (path == null || path.isBlank() || !path.startsWith("/") || userAgent == null || BOT.matcher(userAgent).find()) {
             return;
         }
@@ -49,8 +53,12 @@ public class AnalyticsService {
         }
         String device = userAgent.toLowerCase(Locale.ROOT).matches(".*(mobi|android|iphone).*") ? "mobile"
                 : userAgent.toLowerCase(Locale.ROOT).contains("ipad") || userAgent.toLowerCase(Locale.ROOT).contains("tablet") ? "tablette" : "ordinateur";
-        jdbc.update("insert into page_visits (path, visitor, referrer, device) values (?, ?, ?, ?)",
-                cleanPath, visitorHash(ip, userAgent), referrerHost(referrer), device);
+        String cleanSource = source == null ? null : source.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_-]", "");
+        if (cleanSource != null && (cleanSource.isBlank() || cleanSource.length() > 40)) {
+            cleanSource = null;
+        }
+        jdbc.update("insert into page_visits (path, visitor, referrer, device, source) values (?, ?, ?, ?, ?)",
+                cleanPath, visitorHash(ip, userAgent), referrerHost(referrer), device, cleanSource);
     }
 
     public Summary summary() {
@@ -62,11 +70,17 @@ public class AnalyticsService {
                 count("count(*)", "created_at >= now() - interval '30 days'"),
                 count("count(distinct visitor)", "created_at >= now() - interval '30 days'"),
                 count("count(*)", "true"),
+                count("count(distinct visitor)", BUYER_PAGES + " and created_at >= date_trunc('day', now() at time zone 'Africa/Tunis') at time zone 'Africa/Tunis'"),
+                count("count(distinct visitor)", BUYER_PAGES + " and created_at >= now() - interval '7 days'"),
                 jdbc.queryForList("""
                         select to_char(created_at at time zone 'Africa/Tunis', 'YYYY-MM-DD') as day,
                                count(*) as visits, count(distinct visitor) as visitors
                         from page_visits where created_at >= now() - interval '30 days'
                         group by 1 order by 1"""),
+                jdbc.queryForList("""
+                        select source, count(distinct visitor) as visitors, count(*) as visits
+                        from page_visits where source is not null and created_at >= now() - interval '30 days'
+                        group by source order by visitors desc limit 10"""),
                 jdbc.queryForList("""
                         select path, count(*) as visits from page_visits
                         where created_at >= now() - interval '30 days'
