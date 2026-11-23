@@ -75,6 +75,9 @@ public class Listing {
     @Column(name = "contact_clicks", nullable = false)
     private int contactClicks;
 
+    @Column(nullable = false)
+    private boolean featured;
+
     @ElementCollection
     @CollectionTable(name = "listing_photos", joinColumns = @JoinColumn(name = "listing_id"))
     @OrderColumn(name = "position")

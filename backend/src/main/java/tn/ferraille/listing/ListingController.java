@@ -43,15 +43,16 @@ public class ListingController {
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(required = false) Boolean proOnly,
+            @RequestParam(required = false) Long sellerId,
             @RequestParam(defaultValue = "recent") String sort,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         Sort order = switch (sort) {
             case "price_asc" -> Sort.by(Sort.Order.asc("price").nullsLast());
             case "price_desc" -> Sort.by(Sort.Order.desc("price").nullsLast());
-            default -> Sort.by("createdAt").descending();
+            default -> Sort.by(Sort.Order.desc("featured"), Sort.Order.desc("createdAt"));
         };
-        var filter = new ListingSpecifications.Filter(q, category, condition, make, model, year, city, minPrice, maxPrice, proOnly);
+        var filter = new ListingSpecifications.Filter(q, category, condition, make, model, year, city, minPrice, maxPrice, proOnly, sellerId);
         return listingService.search(filter, PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 50), order));
     }
 
@@ -71,6 +72,16 @@ public class ListingController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void contact(@PathVariable Long id) {
         listingService.recordContact(id);
+    }
+
+    public record BulkRequest(@jakarta.validation.constraints.NotEmpty @jakarta.validation.constraints.Size(max = 10)
+                              java.util.List<@Valid ListingRequest> listings) {
+    }
+
+    @PostMapping("/bulk")
+    @ResponseStatus(HttpStatus.CREATED)
+    public java.util.List<ListingDetail> bulk(@AuthenticationPrincipal AuthenticatedUser user, @Valid @RequestBody BulkRequest request) {
+        return listingService.createBulk(user.id(), request.listings());
     }
 
     @PostMapping

@@ -68,6 +68,11 @@ public class ListingService {
     }
 
     @Transactional
+    public java.util.List<ListingDetail> createBulk(Long sellerId, java.util.List<ListingRequest> requests) {
+        return requests.stream().map(r -> create(sellerId, r)).toList();
+    }
+
+    @Transactional
     public ListingDetail update(Long sellerId, Long id, ListingRequest request) {
         Listing listing = requireOwned(sellerId, id);
         if (listing.getStatus() != ListingStatus.ACTIVE) {

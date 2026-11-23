@@ -62,26 +62,27 @@ public final class ListingDtos {
 
     public record ListingSummary(Long id, String slug, String title, BigDecimal price, Category category, PartCondition condition,
                                  String city, String coverPhoto, SellerType sellerType, String fitsLabel,
-                                 ListingStatus status, int views, int contactClicks, Instant createdAt) {
+                                 ListingStatus status, int views, int contactClicks, boolean featured,
+                                 boolean sellerVerified, Long sellerId, Instant createdAt) {
 
         public static ListingSummary from(Listing l) {
             return new ListingSummary(l.getId(), Slugs.of(l.getTitle()), l.getTitle(), l.getPrice(), l.getCategory(), l.getCondition(),
                     l.getCity(), l.getPhotos().isEmpty() ? null : l.getPhotos().get(0),
                     l.getSeller().getSellerType(), ListingDtos.fitsLabel(l.getFits()), l.getStatus(), l.getViews(), l.getContactClicks(),
-                    l.getCreatedAt());
+                    l.isFeatured(), l.getSeller().isVerified(), l.getSeller().getId(), l.getCreatedAt());
         }
     }
 
     public record ListingDetail(Long id, String slug, String title, String description, BigDecimal price, boolean negotiable,
                                 Category category, PartCondition condition, String city, String oemReference,
                                 ListingStatus status, int views, List<String> photos, List<FitDto> fits,
-                                SellerSummary seller, Instant createdAt) {
+                                SellerSummary seller, boolean featured, Instant createdAt) {
 
         public static ListingDetail from(Listing l, long sellerSales) {
             return new ListingDetail(l.getId(), Slugs.of(l.getTitle()), l.getTitle(), l.getDescription(), l.getPrice(), l.isNegotiable(),
                     l.getCategory(), l.getCondition(), l.getCity(), l.getOemReference(), l.getStatus(), l.getViews(),
                     List.copyOf(l.getPhotos()), l.getFits().stream().map(FitDto::from).toList(),
-                    SellerSummary.from(l.getSeller(), sellerSales), l.getCreatedAt());
+                    SellerSummary.from(l.getSeller(), sellerSales), l.isFeatured(), l.getCreatedAt());
         }
     }
 

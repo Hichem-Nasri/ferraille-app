@@ -62,6 +62,9 @@ public class AuthService {
         user.setCity(blankToNull(request.city()));
         user.setSellerType(request.sellerType());
         user.setShopName(request.sellerType() == SellerType.PRO ? request.shopName().trim() : null);
+        user.setAddress(blankToNull(request.address()));
+        user.setOpeningHours(blankToNull(request.openingHours()));
+        user.setBio(blankToNull(request.bio()));
         return UserResponse.from(user);
     }
 
@@ -108,6 +111,9 @@ public class AuthService {
         user.setShopName(null);
         user.setPasswordHash(null);
         user.setCity(null);
+        user.setAddress(null);
+        user.setOpeningHours(null);
+        user.setBio(null);
     }
 
     private static String blankToNull(String value) {

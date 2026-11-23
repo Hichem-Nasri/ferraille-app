@@ -46,6 +46,13 @@ public class User {
     @Column(name = "facebook_url")
     private String facebookUrl;
 
+    private String address;
+
+    @Column(name = "opening_hours")
+    private String openingHours;
+
+    private String bio;
+
     private String city;
 
     @Enumerated(EnumType.STRING)

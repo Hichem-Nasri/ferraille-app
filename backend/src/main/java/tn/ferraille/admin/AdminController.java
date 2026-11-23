@@ -32,7 +32,32 @@ public class AdminController {
 
     public record AdminUser(Long id, String fullName, String email, String phone, String whatsapp, String facebookUrl,
                             String city, String sellerType, String shopName, String role, boolean facebook,
-                            long activeListings, java.time.Instant createdAt) {
+                            long activeListings, boolean verified, java.time.Instant createdAt) {
+    }
+
+    @PostMapping("/users/{id}/verified")
+    @org.springframework.transaction.annotation.Transactional
+    public java.util.Map<String, Boolean> toggleVerified(@org.springframework.web.bind.annotation.PathVariable Long id) {
+        var u = userRepository.findById(id).orElseThrow(() -> tn.ferraille.common.ApiException.notFound("Utilisateur introuvable"));
+        u.setVerified(!u.isVerified());
+        return java.util.Map.of("verified", u.isVerified());
+    }
+
+    @PostMapping("/listings/{id}/featured")
+    @org.springframework.transaction.annotation.Transactional
+    public java.util.Map<String, Boolean> toggleFeatured(@org.springframework.web.bind.annotation.PathVariable Long id) {
+        var l = listingRepository.findById(id).orElseThrow(() -> tn.ferraille.common.ApiException.notFound("Annonce introuvable"));
+        l.setFeatured(!l.isFeatured());
+        return java.util.Map.of("featured", l.isFeatured());
+    }
+
+    @PostMapping("/listings/{id}/archive")
+    @org.springframework.transaction.annotation.Transactional
+    public java.util.Map<String, Boolean> archive(@org.springframework.web.bind.annotation.PathVariable Long id) {
+        var l = listingRepository.findById(id).orElseThrow(() -> tn.ferraille.common.ApiException.notFound("Annonce introuvable"));
+        l.setStatus(tn.ferraille.listing.ListingStatus.ARCHIVED);
+        l.setFeatured(false);
+        return java.util.Map.of("archived", true);
     }
 
     @GetMapping("/users")
@@ -43,7 +68,7 @@ public class AdminController {
                         u.getFacebookUrl(), u.getCity(), u.getSellerType().name(), u.getShopName(), u.getRole().name(),
                         u.getFacebookId() != null,
                         listingRepository.countBySellerIdAndStatus(u.getId(), tn.ferraille.listing.ListingStatus.ACTIVE),
-                        u.getCreatedAt()))
+                        u.isVerified(), u.getCreatedAt()))
                 .toList();
     }
 

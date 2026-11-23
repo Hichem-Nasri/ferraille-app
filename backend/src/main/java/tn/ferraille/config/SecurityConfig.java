@@ -41,6 +41,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/listings", "/api/listings/{id:\\d+}", "/api/pricing/**", "/api/shipping/**", "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/listings/{id:\\d+}/contact").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/visits").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/requests", "/api/casses", "/api/sellers/{id:\\d+}", "/api/sellers/{id:\\d+}/reviews").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

@@ -29,7 +29,10 @@ public final class AuthDtos {
                     message = "Lien Facebook ou Messenger invalide (https://facebook.com/… ou https://m.me/…)") String facebookUrl,
             @Size(max = 80) String city,
             @NotNull SellerType sellerType,
-            @Size(max = 120) String shopName) {
+            @Size(max = 120) String shopName,
+            @Size(max = 200) String address,
+            @Size(max = 120) String openingHours,
+            @Size(max = 500) String bio) {
     }
 
     public record PasswordRequest(@NotBlank String currentPassword,
@@ -42,13 +45,14 @@ public final class AuthDtos {
     public record UserResponse(Long id, String fullName, String displayName, String email, String phone,
                                String whatsapp, String facebookUrl, String avatarUrl, boolean facebookLinked,
                                boolean hasPassword, boolean hasContact, String city, Role role,
-                               SellerType sellerType, String shopName, boolean verified) {
+                               SellerType sellerType, String shopName, boolean verified,
+                               String address, String openingHours, String bio) {
 
         public static UserResponse from(User u) {
             return new UserResponse(u.getId(), u.getFullName(), u.getDisplayName(), u.getEmail(), u.getPhone(),
                     u.getWhatsapp(), u.getFacebookUrl(), u.getAvatarUrl(), u.getFacebookId() != null,
                     u.getPasswordHash() != null, u.hasContact(), u.getCity(), u.getRole(), u.getSellerType(),
-                    u.getShopName(), u.isVerified());
+                    u.getShopName(), u.isVerified(), u.getAddress(), u.getOpeningHours(), u.getBio());
         }
     }
 

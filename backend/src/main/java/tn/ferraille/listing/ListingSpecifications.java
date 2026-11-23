@@ -18,7 +18,7 @@ public final class ListingSpecifications {
 
     public record Filter(String q, Category category, PartCondition condition, String make, String model,
                          Integer year, String city, BigDecimal minPrice, BigDecimal maxPrice,
-                         Boolean proOnly) {
+                         Boolean proOnly, Long sellerId) {
     }
 
     public static Specification<Listing> search(Filter f) {
@@ -47,6 +47,9 @@ public final class ListingSpecifications {
             }
             if (f.maxPrice() != null) {
                 predicates.add(cb.lessThanOrEqualTo(root.get("price"), f.maxPrice()));
+            }
+            if (f.sellerId() != null) {
+                predicates.add(cb.equal(root.get("seller").get("id"), f.sellerId()));
             }
             if (Boolean.TRUE.equals(f.proOnly())) {
                 predicates.add(cb.equal(root.get("seller").get("sellerType"), SellerType.PRO));
