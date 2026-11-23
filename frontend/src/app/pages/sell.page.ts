@@ -21,6 +21,7 @@ import { PartIconComponent } from '../shared/part-icon.component';
         <h1 class="heading">Vendre une pièce</h1>
         <span class="muted step">{{ progress() }}/4</span>
       </div>
+      <a class="express" routerLink="/vendre/lot">Plusieurs pièces ? Publication express →</a>
       <div class="progress">
         @for (i of [1, 2, 3, 4]; track i) { <span [class.on]="i <= progress()"></span> }
       </div>
@@ -177,6 +178,7 @@ import { PartIconComponent } from '../shared/part-icon.component';
     </form>
   `,
   styles: `
+    .express { font-size: 13px; font-weight: 600; }
     .heading { font-size: 17px; font-weight: 600; }
     .step { width: 44px; text-align: right; font-weight: 600; }
     .progress { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }

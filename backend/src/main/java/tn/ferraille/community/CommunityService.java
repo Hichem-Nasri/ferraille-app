@@ -125,8 +125,18 @@ public class CommunityService {
 
     @Transactional(readOnly = true)
     public SellerProfile sellerProfile(Long id) {
-        User u = userRepository.findById(id).filter(x -> x.getEmail() != null || x.getFacebookId() != null || x.hasContact())
-                .orElseThrow(() -> ApiException.notFound("Vendeur introuvable"));
+        return findSellerProfile(id).orElseThrow(() -> ApiException.notFound("Vendeur introuvable"));
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.Optional<SellerProfile> findSellerProfile(Long id) {
+        return userRepository.findById(id)
+                .filter(x -> x.getEmail() != null || x.getFacebookId() != null || x.hasContact())
+                .map(this::toProfile);
+    }
+
+    private SellerProfile toProfile(User u) {
+        Long id = u.getId();
         long count = listingRepository.countBySellerIdAndStatus(id, ListingStatus.ACTIVE);
         return new SellerProfile(u.getId(), u.getDisplayName(), u.getSellerType(), u.isVerified(), u.getCity(),
                 u.getAddress(), u.getOpeningHours(), u.getBio(), u.getAvatarUrl(), u.getPhone(), u.getWhatsapp(),

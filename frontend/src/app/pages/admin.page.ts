@@ -1,4 +1,5 @@
 import { DatePipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { errorMessage } from '../core/api.service';
@@ -33,13 +34,14 @@ interface AdminUser {
   role: string;
   facebook: boolean;
   activeListings: number;
+  verified: boolean;
   createdAt: string;
 }
 
 @Component({
   selector: 'fr-admin-page',
   standalone: true,
-  imports: [DatePipe],
+  imports: [DatePipe, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page wide">
@@ -94,7 +96,7 @@ interface AdminUser {
       <div class="card table-wrap">
         <table>
           <thead>
-            <tr><th>Inscrit le</th><th>Nom</th><th>E-mail</th><th>WhatsApp / tél.</th><th>Ville</th><th>Type</th><th>Annonces</th></tr>
+            <tr><th>Inscrit le</th><th>Nom</th><th>E-mail</th><th>WhatsApp / tél.</th><th>Ville</th><th>Type</th><th>Annonces</th><th>Vérifié</th></tr>
           </thead>
           <tbody>
             @for (u of realUsers(); track u.id) {
@@ -105,10 +107,11 @@ interface AdminUser {
                 <td>{{ u.whatsapp || u.phone || '—' }}</td>
                 <td>{{ u.city || '—' }}</td>
                 <td>{{ u.sellerType === 'PRO' ? 'Casse' : 'Particulier' }}</td>
-                <td>{{ u.activeListings }}</td>
+                <td>@if (u.activeListings) { <a [routerLink]="['/casse', u.id]">{{ u.activeListings }}</a> } @else { 0 }</td>
+                <td><button type="button" class="vbtn" [class.on]="u.verified" (click)="toggleVerified(u)">{{ u.verified ? '✓ Vérifié' : 'Vérifier' }}</button></td>
               </tr>
             } @empty {
-              <tr><td colspan="7" class="muted">Aucun inscrit pour le moment.</td></tr>
+              <tr><td colspan="8" class="muted">Aucun inscrit pour le moment.</td></tr>
             }
           </tbody>
         </table>
@@ -118,6 +121,8 @@ interface AdminUser {
     </div>
   `,
   styles: `
+    .vbtn { border: 1.5px solid var(--line); background: var(--white); border-radius: 8px; padding: 4px 8px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--ink-2); }
+    .vbtn.on { background: var(--green-soft); border-color: var(--green); color: var(--green); }
     .h1 { font-size: 28px; }
     .chart { display: flex; flex-direction: column; gap: 10px; }
     .bars { display: flex; align-items: flex-end; gap: 4px; height: 160px; }
@@ -142,6 +147,13 @@ interface AdminUser {
 })
 export class AdminPage implements OnInit {
   private readonly http = inject(HttpClient);
+
+  toggleVerified(u: AdminUser): void {
+    this.http.post<{ verified: boolean }>(`/api/admin/users/${u.id}/verified`, {}).subscribe({
+      next: (r) => this.users.update((list) => list.map((x) => (x.id === u.id ? { ...x, verified: r.verified } : x))),
+      error: () => undefined,
+    });
+  }
 
   readonly users = signal<AdminUser[]>([]);
   readonly visits = signal<VisitSummary | null>(null);

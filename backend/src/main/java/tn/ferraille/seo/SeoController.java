@@ -51,6 +51,29 @@ public class SeoController {
         return html(seoService.listing(listing.get()));
     }
 
+    @GetMapping({"/seo/casses", "/seo/casses/{ville}"})
+    public ResponseEntity<String> casses(@PathVariable Optional<String> ville) {
+        return seoService.casses(ville.orElse(null)).map(this::html).orElseGet(() -> html(seoService.notFound()));
+    }
+
+    @GetMapping({"/seo/casse/{id:\\d+}", "/seo/casse/{id:\\d+}/{slug}"})
+    public ResponseEntity<String> seller(@PathVariable Long id, @PathVariable Optional<String> slug) {
+        Optional<SeoService.SeoPage> page = seoService.seller(id);
+        if (page.isEmpty()) {
+            return html(seoService.notFound());
+        }
+        String canonical = page.get().canonicalPath();
+        if (!canonical.equals("/casse/" + id + slug.map(s -> "/" + s).orElse(""))) {
+            return ResponseEntity.status(HttpStatus.MOVED_PERMANENTLY).location(URI.create(canonical)).build();
+        }
+        return html(page.get());
+    }
+
+    @GetMapping("/seo/demandes")
+    public ResponseEntity<String> requests() {
+        return html(seoService.requests());
+    }
+
     @GetMapping(value = "/seo/sitemap.xml", produces = MediaType.APPLICATION_XML_VALUE)
     public ResponseEntity<String> sitemap() {
         return ResponseEntity.ok()

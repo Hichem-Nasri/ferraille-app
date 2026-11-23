@@ -52,6 +52,9 @@ export interface User {
   sellerType: SellerType;
   shopName?: string;
   verified: boolean;
+  address?: string;
+  openingHours?: string;
+  bio?: string;
 }
 
 export interface AuthConfig {
@@ -85,6 +88,9 @@ export interface ListingSummary {
   status: ListingStatus;
   views: number;
   contactClicks: number;
+  featured: boolean;
+  sellerVerified: boolean;
+  sellerId: number;
   createdAt: string;
 }
 
@@ -118,6 +124,7 @@ export interface ListingDetail {
   photos: string[];
   fits: VehicleFit[];
   seller: SellerSummary;
+  featured: boolean;
   createdAt: string;
 }
 
@@ -142,6 +149,8 @@ export interface ListingFilter {
   model?: string;
   year?: number;
   city?: string;
+  sellerId?: number;
+  proOnly?: boolean;
   sort?: 'recent' | 'price_asc' | 'price_desc';
   page?: number;
   size?: number;
@@ -263,4 +272,98 @@ export interface ApiError {
   status: number;
   message: string;
   fields?: Record<string, string>;
+}
+
+export interface PartRequest {
+  id: number;
+  make: string;
+  model: string;
+  year?: number | null;
+  category?: Category | null;
+  description: string;
+  city?: string;
+  status: 'OPEN' | 'CLOSED';
+  createdAt: string;
+  author: { id: number; displayName: string; avatarUrl?: string; phone?: string; whatsapp?: string; facebookUrl?: string };
+  mine: boolean;
+}
+
+export interface PartRequestCreate {
+  make: string;
+  model: string;
+  year?: number | null;
+  category?: Category | null;
+  description: string;
+  city?: string;
+}
+
+export interface Review {
+  id: number;
+  rating: number;
+  comment?: string;
+  authorName: string;
+  authorAvatar?: string;
+  createdAt: string;
+}
+
+export interface SellerProfile {
+  id: number;
+  displayName: string;
+  sellerType: SellerType;
+  verified: boolean;
+  city?: string;
+  address?: string;
+  openingHours?: string;
+  bio?: string;
+  avatarUrl?: string;
+  phone?: string;
+  whatsapp?: string;
+  facebookUrl?: string;
+  memberSince?: string;
+  listingsCount: number;
+  rating: number | null;
+  reviewsCount: number;
+}
+
+export interface CasseCard {
+  id: number;
+  displayName: string;
+  verified: boolean;
+  city?: string;
+  address?: string;
+  openingHours?: string;
+  avatarUrl?: string;
+  phone?: string;
+  whatsapp?: string;
+  facebookUrl?: string;
+  listingsCount: number;
+  rating: number | null;
+  reviewsCount: number;
+}
+
+export interface SavedSearch {
+  id: number;
+  label: string;
+  q?: string;
+  category?: Category | null;
+  make?: string;
+  model?: string;
+  year?: number | null;
+  city?: string;
+  newCount: number;
+  createdAt: string;
+}
+
+export interface SavedSearchCreate {
+  q?: string;
+  category?: Category | null;
+  make?: string;
+  model?: string;
+  year?: number | null;
+  city?: string;
+}
+
+export interface AlertCounts {
+  newListings: number;
+  matchingRequests: number;
 }

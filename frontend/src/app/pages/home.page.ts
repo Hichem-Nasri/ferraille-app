@@ -1,11 +1,14 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, Input, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { EMPTY, Subject, catchError, debounceTime, map, switchMap } from 'rxjs';
-import { ApiService } from '../core/api.service';
+import { ApiService, errorMessage } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { GarageService } from '../core/garage.service';
+import { I18nService, TranslatePipe } from '../core/i18n';
+import { NotifService } from '../core/notif.service';
+import { slugify } from '../core/slug';
 import { CATEGORIES, MAKES, categoryBySlug } from '../core/labels';
 import { DEFAULT_DESCRIPTION, SITE_NAME, SeoService } from '../core/seo.service';
 import { Category, ListingFilter, ListingSummary } from '../core/models';
@@ -17,7 +20,7 @@ import { PartIconComponent } from '../shared/part-icon.component';
 @Component({
   selector: 'fr-home-page',
   standalone: true,
-  imports: [FormsModule, RouterLink, IconComponent, PartIconComponent, ListingCardComponent, BottomNavComponent],
+  imports: [FormsModule, RouterLink, TranslatePipe, IconComponent, PartIconComponent, ListingCardComponent, BottomNavComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page wide">
@@ -29,11 +32,16 @@ import { PartIconComponent } from '../shared/part-icon.component';
             <h1 class="tagline">{{ heading() }}</h1>
           </div>
         </div>
-        @if (auth.isLoggedIn()) {
-          <a class="icon-btn mobile-only" routerLink="/profil" aria-label="Mon profil"><fr-icon name="user" /></a>
-        } @else {
-          <a class="btn btn-ghost login mobile-only" routerLink="/connexion">Connexion</a>
-        }
+        <div class="row mobile-only head-actions">
+          <button type="button" class="lang" (click)="i18n.toggle()">{{ i18n.lang() === 'fr' ? 'عربي' : 'FR' }}</button>
+          @if (auth.isLoggedIn()) {
+            <a class="icon-btn rel" routerLink="/alertes" [attr.aria-label]="'Alertes' | t"><fr-icon name="bell" />
+              @if (notif.counts().newListings) { <span class="dot">{{ notif.counts().newListings }}</span> }
+            </a>
+          } @else {
+            <a class="btn btn-ghost login" routerLink="/connexion">{{ 'Connexion' | t }}</a>
+          }
+        </div>
       </header>
 
       <div class="search-zone">
@@ -41,7 +49,7 @@ import { PartIconComponent } from '../shared/part-icon.component';
         <label class="search">
           <fr-icon name="search" />
           <input type="search" name="q" [(ngModel)]="query" (ngModelChange)="search()"
-                 placeholder="Phare 208, jante 16″, démarreur…" aria-label="Rechercher une pièce">
+                 [placeholder]="placeholder()" aria-label="Rechercher une pièce">
         </label>
         <button type="button" class="icon-btn filter" aria-label="Changer de véhicule" (click)="garageOpen.set(true)">
           <fr-icon name="filter" />
@@ -51,10 +59,10 @@ import { PartIconComponent } from '../shared/part-icon.component';
       <div class="card card-pad row">
         <div class="garage-icon"><fr-icon name="car" [size]="22" /></div>
         <div class="stack grow">
-          <span class="eyebrow">Mon garage</span>
-          <span class="garage-label">{{ garage.vehicle() ? garage.label() : 'Ajoute ta voiture pour filtrer' }}</span>
+          <span class="eyebrow">{{ 'Mon garage' | t }}</span>
+          <span class="garage-label">{{ garage.vehicle() ? garage.label() : ('Ajoute ta voiture pour filtrer' | t) }}</span>
         </div>
-        <button type="button" class="link" (click)="garageOpen.set(true)">{{ garage.vehicle() ? 'Changer' : 'Ajouter' }}</button>
+        <button type="button" class="link" (click)="garageOpen.set(true)">{{ (garage.vehicle() ? 'Changer' : 'Ajouter') | t }}</button>
       </div>
       </div>
 
@@ -87,7 +95,7 @@ import { PartIconComponent } from '../shared/part-icon.component';
       }
 
       <section class="stack gap">
-        <h2 class="section-title">Catégories</h2>
+        <h2 class="section-title">{{ 'Catégories' | t }}</h2>
         <div class="categories">
           @for (c of categories; track c.value) {
             <a class="category" [class.active]="category() === c.value"
@@ -103,10 +111,10 @@ import { PartIconComponent } from '../shared/part-icon.component';
       <div class="dark-card row banner">
         <div class="ring"></div>
         <div class="stack grow">
-          <span class="banner-title">Une pièce qui dort dans ton garage ?</span>
-          <span class="banner-text">Publie gratuitement en 2 minutes. Les acheteurs te contactent directement sur WhatsApp.</span>
+          <span class="banner-title">{{ 'Une pièce qui dort dans ton garage ?' | t }}</span>
+          <span class="banner-text">{{ 'Publie gratuitement en 2 minutes. Les acheteurs te contactent directement sur WhatsApp.' | t }}</span>
         </div>
-        <a class="btn btn-lime sell" routerLink="/vendre">Vendre</a>
+        <a class="btn btn-lime sell" routerLink="/vendre">{{ 'Vendre' | t }}</a>
       </div>
 
       <section class="stack gap">
@@ -115,17 +123,37 @@ import { PartIconComponent } from '../shared/part-icon.component';
           <span class="muted">{{ total() }} pièce{{ total() > 1 ? 's' : '' }}</span>
         </div>
         @if (loading() && listings().length === 0) {
-          <div class="empty">Chargement…</div>
+          <div class="empty">{{ 'Chargement…' | t }}</div>
         } @else if (listings().length === 0) {
-          <div class="empty card">Aucune pièce trouvée pour le moment.</div>
+          <div class="empty card">{{ 'Aucune pièce trouvée pour le moment.' | t }}</div>
         } @else {
           <div class="listing-grid">
             @for (l of listings(); track l.id) { <fr-listing-card [listing]="l" /> }
           </div>
           @if (hasMore()) {
-            <button type="button" class="btn btn-ghost btn-block" (click)="loadMore()" [disabled]="loading()">Voir plus</button>
+            <button type="button" class="btn btn-ghost btn-block" (click)="loadMore()" [disabled]="loading()">{{ 'Voir plus' | t }}</button>
           }
         }
+      </section>
+
+      <section class="helpers">
+        <div class="card card-pad stack helper">
+          <span class="helper-title"><fr-icon name="search" [size]="18" /> {{ 'Tu ne trouves pas ta pièce ?' | t }}</span>
+          <span class="muted small">{{ 'Publie une demande : les casses qui ont ta marque la voient et te contactent.' | t }}</span>
+          <a class="btn btn-primary" routerLink="/demandes">{{ 'Publier une demande' | t }}</a>
+        </div>
+        <div class="card card-pad stack helper">
+          <span class="helper-title"><fr-icon name="bell" [size]="18" /> {{ 'Créer une alerte' | t }}</span>
+          <span class="muted small">{{ 'Sois prévenu dès qu’une pièce correspondante est publiée.' | t }}
+            @if (alertLabel()) { <strong>{{ alertLabel() }}</strong> } @else { Tape une recherche ou choisis ta voiture d'abord. }</span>
+          @if (alertMessage()) { <span class="small ok">{{ alertMessage() }}</span> }
+          <button type="button" class="btn btn-ghost" (click)="createAlert()" [disabled]="!alertLabel() || alertSaving()">{{ 'Créer une alerte' | t }}</button>
+        </div>
+        <div class="card card-pad stack helper">
+          <span class="helper-title"><fr-icon name="pin" [size]="18" /> {{ 'Casses près de chez moi' | t }}</span>
+          <span class="muted small">Adresses, horaires, pièces en ligne et WhatsApp des casses de ton gouvernorat.</span>
+          <a class="btn btn-ghost" [routerLink]="cassesLink()">{{ 'Casses' | t }}</a>
+        </div>
       </section>
     </div>
     <fr-bottom-nav />
@@ -155,6 +183,15 @@ import { PartIconComponent } from '../shared/part-icon.component';
     .banner-text { font-size: 13px; color: #c9d8cf; line-height: 1.4; position: relative; }
     .sell { height: 44px; position: relative; flex-shrink: 0; }
     .search-zone { display: flex; flex-direction: column; gap: 18px; }
+    .head-actions { gap: 8px; }
+    .lang { border: 1.5px solid var(--line); background: var(--white); border-radius: 12px; height: 44px; padding: 0 12px; font-weight: 700; font-size: 14px; cursor: pointer; color: var(--ink-2); }
+    .rel { position: relative; }
+    .dot { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: var(--danger); color: var(--white); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+    .helpers { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+    .helper { gap: 8px; }
+    .helper .btn { margin-top: auto; }
+    .helper-title { font-weight: 700; display: inline-flex; align-items: center; gap: 8px; }
+    .ok { color: var(--green); font-weight: 600; }
     @media (min-width: 900px) {
       .home-header { padding-top: 8px; }
       .tagline { font-family: var(--display); font-size: 34px; font-weight: 700; letter-spacing: -0.8px; color: var(--ink); margin: 0; }
@@ -172,6 +209,24 @@ import { PartIconComponent } from '../shared/part-icon.component';
 export class HomePage implements OnInit {
   readonly auth = inject(AuthService);
   readonly garage = inject(GarageService);
+  readonly i18n = inject(I18nService);
+  readonly notif = inject(NotifService);
+  private readonly router = inject(Router);
+  readonly alertSaving = signal(false);
+  readonly alertMessage = signal<string | null>(null);
+  private readonly queryText = signal('');
+  readonly placeholder = computed(() =>
+    this.i18n.lang() === 'ar' ? this.i18n.t('Phare 208, jante 16″, démarreur…') : 'Phare 208, démarreur, réf. OEM 9678…',
+  );
+  readonly alertLabel = computed(() => {
+    const v = this.garage.vehicle();
+    const meta = CATEGORIES.find((c) => c.value === this.category());
+    return [this.queryText().trim(), meta?.label, v ? `${v.make} ${v.model}` : ''].filter(Boolean).join(' · ');
+  });
+  readonly cassesLink = computed(() => {
+    const city = this.auth.user()?.city;
+    return city ? ['/casses', slugify(city)] : ['/casses'];
+  });
   private readonly api = inject(ApiService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -305,11 +360,34 @@ export class HomePage implements OnInit {
   }
 
   search(): void {
+    this.queryText.set(this.query);
     this.searches.next({ filter: this.filter(0), append: false });
   }
 
   loadMore(): void {
     this.searches.next({ filter: this.filter(this.page() + 1), append: true });
+  }
+
+  createAlert(): void {
+    if (!this.auth.isLoggedIn()) {
+      this.router.navigate(['/connexion'], { queryParams: { retour: '/' } });
+      return;
+    }
+    const v = this.garage.vehicle();
+    this.alertSaving.set(true);
+    this.alertMessage.set(null);
+    this.api
+      .createAlert({ q: this.query.trim() || undefined, category: this.category(), make: v?.make, model: v?.model, year: v?.year })
+      .subscribe({
+        next: () => {
+          this.alertSaving.set(false);
+          this.alertMessage.set('Alerte créée. Retrouve-la dans « Alertes ».');
+        },
+        error: (e: unknown) => {
+          this.alertSaving.set(false);
+          this.alertMessage.set(errorMessage(e));
+        },
+      });
   }
 
   saveGarage(): void {

@@ -2,6 +2,14 @@ import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http'
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import {
+  AlertCounts,
+  CasseCard,
+  PartRequest,
+  PartRequestCreate,
+  Review,
+  SavedSearch,
+  SavedSearchCreate,
+  SellerProfile,
   Carrier,
   CarrierOption,
   CheckoutQuote,
@@ -30,6 +38,9 @@ export interface ProfileUpdate {
   city?: string;
   sellerType: SellerType;
   shopName?: string;
+  address?: string;
+  openingHours?: string;
+  bio?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -98,6 +109,85 @@ export class ApiService {
 
   dispute(id: number, reason: string): Observable<OrderDetail> {
     return this.http.post<OrderDetail>(`/api/orders/${id}/dispute`, { reason });
+  }
+
+  createListingsBulk(listings: ListingRequest[]): Observable<ListingDetail[]> {
+    return this.http.post<ListingDetail[]>('/api/listings/bulk', { listings });
+  }
+
+  requests(filter: { make?: string; model?: string; city?: string; page?: number } = {}): Observable<Page<PartRequest>> {
+    let params = new HttpParams();
+    for (const [k, v] of Object.entries(filter)) {
+      if (v !== undefined && v !== null && v !== '') {
+        params = params.set(k, String(v));
+      }
+    }
+    return this.http.get<Page<PartRequest>>('/api/requests', { params });
+  }
+
+  requestsForMe(): Observable<PartRequest[]> {
+    return this.http.get<PartRequest[]>('/api/requests/for-me');
+  }
+
+  myRequests(): Observable<Page<PartRequest>> {
+    return this.http.get<Page<PartRequest>>('/api/requests/mine');
+  }
+
+  createRequest(body: PartRequestCreate): Observable<PartRequest> {
+    return this.http.post<PartRequest>('/api/requests', body);
+  }
+
+  closeRequest(id: number): Observable<void> {
+    return this.http.post<void>(`/api/requests/${id}/close`, {});
+  }
+
+  seller(id: number): Observable<SellerProfile> {
+    return this.http.get<SellerProfile>(`/api/sellers/${id}`);
+  }
+
+  reviews(sellerId: number): Observable<Review[]> {
+    return this.http.get<Review[]>(`/api/sellers/${sellerId}/reviews`);
+  }
+
+  review(sellerId: number, rating: number, comment: string): Observable<Review> {
+    return this.http.post<Review>(`/api/sellers/${sellerId}/reviews`, { rating, comment });
+  }
+
+  casses(city?: string): Observable<CasseCard[]> {
+    const params = city ? new HttpParams().set('city', city) : undefined;
+    return this.http.get<CasseCard[]>('/api/casses', { params });
+  }
+
+  alerts(): Observable<SavedSearch[]> {
+    return this.http.get<SavedSearch[]>('/api/alerts');
+  }
+
+  alertCounts(): Observable<AlertCounts> {
+    return this.http.get<AlertCounts>('/api/alerts/count');
+  }
+
+  createAlert(body: SavedSearchCreate): Observable<SavedSearch> {
+    return this.http.post<SavedSearch>('/api/alerts', body);
+  }
+
+  alertSeen(id: number): Observable<void> {
+    return this.http.post<void>(`/api/alerts/${id}/seen`, {});
+  }
+
+  deleteAlert(id: number): Observable<void> {
+    return this.http.delete<void>(`/api/alerts/${id}`);
+  }
+
+  adminToggleVerified(userId: number): Observable<{ verified: boolean }> {
+    return this.http.post<{ verified: boolean }>(`/api/admin/users/${userId}/verified`, {});
+  }
+
+  adminToggleFeatured(listingId: number): Observable<{ featured: boolean }> {
+    return this.http.post<{ featured: boolean }>(`/api/admin/listings/${listingId}/featured`, {});
+  }
+
+  adminArchive(listingId: number): Observable<void> {
+    return this.http.post<void>(`/api/admin/listings/${listingId}/archive`, {});
   }
 
   recordContact(id: number): Observable<void> {

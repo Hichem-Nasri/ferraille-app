@@ -123,7 +123,7 @@ jobs:
             done
             docker compose ps
             echo "--- Vérification ---"
-            for path in "/" "/api/listings?size=1" "/pieces/moteur" "/sitemap.xml" "/robots.txt"; do
+            for path in "/" "/api/listings?size=1" "/pieces/moteur" "/sitemap.xml" "/robots.txt" "/casses" "/demandes" "/api/casses" "/api/requests"; do
               echo "$path -> $(curl -s -o /dev/null -w '%{http_code}' "http://localhost:$PORT$path")"
             done
             curl -s "http://localhost:$PORT/api/listings?size=50" | grep -o '"totalElements":[0-9]*' || true

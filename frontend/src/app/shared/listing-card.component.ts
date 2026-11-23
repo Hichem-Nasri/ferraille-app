@@ -4,11 +4,12 @@ import { DinarPipe } from '../core/dinar.pipe';
 import { categoryMeta } from '../core/labels';
 import { ListingSummary } from '../core/models';
 import { PartIconComponent } from './part-icon.component';
+import { TranslatePipe } from '../core/i18n';
 
 @Component({
   selector: 'fr-listing-card',
   standalone: true,
-  imports: [RouterLink, DinarPipe, PartIconComponent],
+  imports: [RouterLink, DinarPipe, PartIconComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <a class="card listing" [routerLink]="['/piece', listing.id, listing.slug]">
@@ -18,9 +19,11 @@ import { PartIconComponent } from './part-icon.component';
         } @else {
           <fr-part-icon [name]="meta().icon" [size]="64" />
         }
-        @if (listing.sellerType === 'PRO') {
-          <span class="badge pro">PRO</span>
-        }
+        <span class="badges">
+          @if (listing.featured) { <span class="badge star">★ {{ 'À la une' | t }}</span> }
+          @if (listing.sellerType === 'PRO') { <span class="badge">PRO</span> }
+          @if (listing.sellerVerified) { <span class="badge ok">✓ {{ 'Vérifiée' | t }}</span> }
+        </span>
       </div>
       <div class="body">
         <span class="price">{{ listing.price | dinar }}</span>
@@ -33,7 +36,9 @@ import { PartIconComponent } from './part-icon.component';
     .listing { display: flex; flex-direction: column; overflow: hidden; color: var(--ink); font-weight: 400; }
     .thumb { height: 128px; position: relative; display: flex; align-items: center; justify-content: center; }
     .thumb img { width: 100%; height: 100%; object-fit: cover; }
-    .pro { position: absolute; top: 10px; left: 10px; }
+    .badges { position: absolute; top: 10px; inset-inline-start: 10px; display: flex; gap: 4px; flex-wrap: wrap; }
+    .badge.star { background: var(--lime); color: var(--forest); }
+    .badge.ok { background: var(--white); color: var(--green); }
     .body { padding: 12px; display: flex; flex-direction: column; gap: 4px; }
     .price { font-size: 18px; }
     .title { margin: 0; font-family: var(--font); letter-spacing: 0; font-size: 13px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }

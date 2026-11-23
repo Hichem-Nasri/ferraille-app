@@ -48,6 +48,8 @@ public class SeoService {
     }
 
     private final ListingRepository listingRepository;
+    private final tn.ferraille.community.CommunityService communityService;
+    private final tn.ferraille.community.PartRequestRepository partRequestRepository;
     private final ObjectMapper objectMapper;
     private final RestClient restClient;
     private final String publicUrl;
@@ -57,9 +59,13 @@ public class SeoService {
     private volatile Instant cachedAt = Instant.EPOCH;
 
     public SeoService(ListingRepository listingRepository, ObjectMapper objectMapper,
+                      tn.ferraille.community.CommunityService communityService,
+                      tn.ferraille.community.PartRequestRepository partRequestRepository,
                       @Value("${ferraille.public-url:http://localhost}") String publicUrl,
                       @Value("${ferraille.frontend-index-url:http://frontend/index.html}") String indexUrl) {
         this.listingRepository = listingRepository;
+        this.communityService = communityService;
+        this.partRequestRepository = partRequestRepository;
         this.objectMapper = objectMapper;
         this.publicUrl = publicUrl.replaceAll("/+$", "");
         this.indexUrl = indexUrl;
@@ -269,6 +275,172 @@ public class SeoService {
     }
 
     @Transactional(readOnly = true)
+    public Optional<SeoPage> casses(String citySlug) {
+        List<tn.ferraille.community.CommunityDtos.CasseCard> all = communityService.casses(null);
+        String city = null;
+        if (citySlug != null) {
+            city = all.stream().map(tn.ferraille.community.CommunityDtos.CasseCard::city)
+                    .filter(c -> c != null && Slugs.of(c).equals(citySlug)).findFirst().orElse(null);
+        }
+        String finalCity = city;
+        List<tn.ferraille.community.CommunityDtos.CasseCard> cards = city == null ? all
+                : all.stream().filter(c -> finalCity.equalsIgnoreCase(c.city())).toList();
+        String where = city == null ? " en Tunisie" : " à " + city;
+        String path = city == null ? "/casses" : "/casses/" + Slugs.of(city);
+        boolean empty = cards.isEmpty();
+        String title = "Casses auto" + where + " — pièces d'occasion" + (city == null ? " par ville" : "") + " | " + SITE_NAME;
+        String description = (city == null ? "Annuaire des casses auto en Tunisie par gouvernorat" : "Casses auto à " + city)
+                + " : " + cards.size() + " casse" + (cards.size() > 1 ? "s" : "")
+                + " avec pièces d'occasion en ligne, adresse, horaires et contact WhatsApp direct.";
+        List<Map.Entry<String, String>> crumbs = city == null
+                ? List.of(Map.entry("Accueil", "/"), Map.entry("Casses", "/casses"))
+                : List.of(Map.entry("Accueil", "/"), Map.entry("Casses", "/casses"), Map.entry(city, path));
+        StringBuilder body = new StringBuilder(breadcrumbHtml(crumbs))
+                .append("<h1>Casses auto").append(esc(where)).append("</h1>");
+        if (empty) {
+            body.append("<p>Aucune casse en ligne pour le moment.</p>");
+        } else {
+            body.append("<ul>");
+            for (var c : cards) {
+                body.append("<li><a href=\"").append(sellerPath(c.id(), c.displayName())).append("\">")
+                        .append(esc(c.displayName())).append("</a> — ").append(c.listingsCount()).append(" pièce(s)");
+                if (c.city() != null) {
+                    body.append(", ").append(esc(c.city()));
+                }
+                if (c.address() != null) {
+                    body.append(", ").append(esc(c.address()));
+                }
+                body.append("</li>");
+            }
+            body.append("</ul>");
+        }
+        body.append(cityLinks(all));
+        List<Object> ld = new ArrayList<>();
+        ld.add(breadcrumbLd(crumbs));
+        Map<String, Object> list = node("ItemList");
+        List<Object> items = new ArrayList<>();
+        for (int i = 0; i < cards.size(); i++) {
+            Map<String, Object> item = node("ListItem");
+            item.put("position", i + 1);
+            item.put("url", publicUrl + sellerPath(cards.get(i).id(), cards.get(i).displayName()));
+            item.put("name", cards.get(i).displayName());
+            items.add(item);
+        }
+        list.put("itemListElement", items);
+        ld.add(list);
+        if (citySlug != null && city == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new SeoPage(200, title, description, path, publicUrl + "/og-image.png", "website",
+                empty && city != null, ld, body.toString()));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<SeoPage> seller(Long id) {
+        var found = communityService.findSellerProfile(id);
+        if (found.isEmpty()) {
+            return Optional.empty();
+        }
+        var s = found.get();
+        List<Listing> listings = listingRepository.findAll(
+                tn.ferraille.listing.ListingSpecifications.search(new tn.ferraille.listing.ListingSpecifications.Filter(
+                        null, null, null, null, null, null, null, null, null, null, id)),
+                PageRequest.of(0, 48, org.springframework.data.domain.Sort.by("createdAt").descending())).getContent();
+        boolean pro = s.sellerType() == tn.ferraille.user.SellerType.PRO;
+        String where = s.city() != null ? " à " + s.city() : " en Tunisie";
+        String path = sellerPath(s.id(), s.displayName());
+        String title = s.displayName() + " — " + (pro ? "Casse auto" : "Vendeur") + where + ", pièces d'occasion | " + SITE_NAME;
+        String description = truncate(s.displayName() + " : " + listings.size() + " pièce(s) auto d'occasion en ligne" + where + ". "
+                + (s.address() != null ? "Adresse : " + s.address() + ". " : "")
+                + (s.openingHours() != null ? "Horaires : " + s.openingHours() + ". " : "")
+                + "Contact direct par WhatsApp.", 300);
+        List<Map.Entry<String, String>> crumbs = List.of(Map.entry("Accueil", "/"), Map.entry("Casses", "/casses"),
+                Map.entry(s.displayName(), path));
+        StringBuilder body = new StringBuilder(breadcrumbHtml(crumbs))
+                .append("<h1>").append(esc(s.displayName())).append("</h1>");
+        if (s.bio() != null) {
+            body.append("<p>").append(esc(s.bio())).append("</p>");
+        }
+        if (s.address() != null) {
+            body.append("<p>Adresse : ").append(esc(s.address())).append("</p>");
+        }
+        if (s.openingHours() != null) {
+            body.append("<p>Horaires : ").append(esc(s.openingHours())).append("</p>");
+        }
+        body.append("<h2>Pièces en vente</h2>")
+                .append(listings.isEmpty() ? "<p>Aucune pièce en ligne pour le moment.</p>" : listingList(listings));
+        Map<String, Object> entity = node(pro ? "AutoPartsStore" : "Person");
+        entity.put("name", s.displayName());
+        entity.put("url", publicUrl + path);
+        if (s.address() != null) {
+            Map<String, Object> address = node("PostalAddress");
+            address.put("streetAddress", s.address());
+            if (s.city() != null) {
+                address.put("addressLocality", s.city());
+            }
+            address.put("addressCountry", "TN");
+            entity.put("address", address);
+        }
+        if (pro && s.openingHours() != null) {
+            entity.put("openingHours", s.openingHours());
+        }
+        if (pro && s.rating() != null && s.reviewsCount() > 0) {
+            Map<String, Object> rating = node("AggregateRating");
+            rating.put("ratingValue", s.rating());
+            rating.put("reviewCount", s.reviewsCount());
+            entity.put("aggregateRating", rating);
+        }
+        String image = s.avatarUrl() != null ? s.avatarUrl()
+                : listings.isEmpty() || listings.get(0).getPhotos().isEmpty() ? publicUrl + "/og-image.png"
+                : absolute(listings.get(0).getPhotos().get(0));
+        return Optional.of(new SeoPage(200, title, description, path, image, "profile", listings.isEmpty(),
+                List.of(breadcrumbLd(crumbs), entity, itemList(listings)), body.toString()));
+    }
+
+    @Transactional(readOnly = true)
+    public SeoPage requests() {
+        var open = partRequestRepository.findAll(PageRequest.of(0, 50,
+                org.springframework.data.domain.Sort.by("createdAt").descending())).getContent().stream()
+                .filter(r -> r.getStatus() == tn.ferraille.community.PartRequest.Status.OPEN).toList();
+        List<Map.Entry<String, String>> crumbs = List.of(Map.entry("Accueil", "/"), Map.entry("Demandes", "/demandes"));
+        StringBuilder body = new StringBuilder(breadcrumbHtml(crumbs))
+                .append("<h1>Demandes de pièces auto d'occasion</h1>")
+                .append("<p>Les acheteurs décrivent la pièce qu'ils cherchent ; les casses qui l'ont les contactent.</p><ul>");
+        for (var r : open) {
+            body.append("<li>").append(esc(r.getMake() + " " + r.getModel()))
+                    .append(r.getYear() != null ? " " + r.getYear() : "").append(" — ")
+                    .append(esc(truncate(r.getDescription(), 140)))
+                    .append(r.getCity() != null ? " (" + esc(r.getCity()) + ")" : "").append("</li>");
+        }
+        body.append("</ul>");
+        return new SeoPage(200, "Demandes de pièces auto d'occasion en Tunisie | " + SITE_NAME,
+                "Tu cherches une pièce auto d'occasion introuvable ? Publie une demande gratuite : les casses de Tunisie qui l'ont te contactent sur WhatsApp.",
+                "/demandes", publicUrl + "/og-image.png", "website", false, List.of(breadcrumbLd(crumbs)), body.toString());
+    }
+
+    public static String sellerPath(Long id, String name) {
+        String slug = Slugs.of(name);
+        return "/casse/" + id + (slug.isEmpty() ? "" : "/" + slug);
+    }
+
+    private String cityLinks(List<tn.ferraille.community.CommunityDtos.CasseCard> all) {
+        java.util.Set<String> cities = new java.util.TreeSet<>();
+        all.forEach(c -> {
+            if (c.city() != null) {
+                cities.add(c.city());
+            }
+        });
+        if (cities.isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder("<nav aria-label=\"Villes\"><h2>Casses par ville</h2><ul>");
+        for (String c : cities) {
+            sb.append("<li><a href=\"/casses/").append(Slugs.of(c)).append("\">Casses auto à ").append(esc(c)).append("</a></li>");
+        }
+        return sb.append("</ul></nav>").toString();
+    }
+
+    @Transactional(readOnly = true)
     public String sitemap() {
         StringBuilder xml = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
                 .append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" ")
@@ -276,6 +448,19 @@ public class SeoService {
         xml.append(url("/", null, "daily", "1.0", List.of()));
         for (Category c : Category.values()) {
             xml.append(url("/pieces/" + c.slug(), null, "daily", "0.8", List.of()));
+        }
+        xml.append(url("/casses", null, "daily", "0.8", List.of()));
+        xml.append(url("/demandes", null, "daily", "0.6", List.of()));
+        var casses = communityService.casses(null);
+        java.util.Set<String> citySlugs = new java.util.TreeSet<>();
+        for (var c : casses) {
+            if (c.city() != null) {
+                citySlugs.add(Slugs.of(c.city()));
+            }
+            xml.append(url(sellerPath(c.id(), c.displayName()), null, "weekly", "0.7", List.of()));
+        }
+        for (String slug : citySlugs) {
+            xml.append(url("/casses/" + slug, null, "weekly", "0.7", List.of()));
         }
         for (Listing l : listingRepository.findByStatusOrderByUpdatedAtDesc(ListingStatus.ACTIVE, PageRequest.of(0, 45000))) {
             xml.append(url(listingPath(l), l.getUpdatedAt(), "weekly", "0.6",

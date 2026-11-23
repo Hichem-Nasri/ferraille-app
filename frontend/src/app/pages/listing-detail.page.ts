@@ -9,6 +9,7 @@ import { categoryMeta, conditionLabel } from '../core/labels';
 import { SITE_NAME, SeoService } from '../core/seo.service';
 import { phoneLink, whatsappLink } from '../core/contact';
 import { ListingDetail } from '../core/models';
+import { slugify } from '../core/slug';
 import { IconComponent } from '../shared/icon.component';
 import { PartIconComponent } from '../shared/part-icon.component';
 
@@ -85,7 +86,7 @@ import { PartIconComponent } from '../shared/part-icon.component';
           <p class="description">{{ l.description }}</p>
         }
 
-        <div class="card card-pad row">
+        <a class="card card-pad row seller-card" [routerLink]="['/casse', l.seller.id, sellerSlug(l)]">
           @if (l.seller.avatarUrl) {
             <img class="avatar photo" [src]="l.seller.avatarUrl" alt="" width="48" height="48">
           } @else {
@@ -100,7 +101,25 @@ import { PartIconComponent } from '../shared/part-icon.component';
               {{ l.seller.sellerType === 'PRO' ? 'Casse / professionnel' : 'Particulier' }} · {{ l.seller.listingsCount }} annonce{{ l.seller.listingsCount > 1 ? 's' : '' }} · {{ l.city }}
             </span>
           </div>
-        </div>
+          <span class="see-shop">Voir tout<fr-icon name="chevron-right" [size]="16" /></span>
+        </a>
+
+        @if (contacted() && !isOwner()) {
+          <div class="card card-pad row review-nudge">
+            <span class="grow small">Tu as contacté <strong>{{ l.seller.displayName }}</strong> ? Aide les autres acheteurs en laissant un avis.</span>
+            <a class="btn btn-primary" [routerLink]="['/casse', l.seller.id, sellerSlug(l)]">Laisser un avis</a>
+          </div>
+        }
+
+        @if (isAdmin()) {
+          <div class="card card-pad row admin-tools">
+            <span class="grow small strong">Modération</span>
+            <button type="button" class="btn btn-ghost" (click)="toggleFeatured(l)">{{ l.featured ? 'Retirer de la une' : 'Mettre à la une' }}</button>
+            @if (l.status === 'ACTIVE') {
+              <button type="button" class="btn btn-ghost danger" (click)="adminArchive(l)">Retirer l'annonce</button>
+            }
+          </div>
+        }
 
         @if (!isOwner() && l.status === 'ACTIVE') {
           <section class="stack gap8">
@@ -158,6 +177,13 @@ import { PartIconComponent } from '../shared/part-icon.component';
     }
   `,
   styles: `
+    .seller-card { color: var(--ink); font-weight: 400; }
+    .see-shop { color: var(--green); font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0; }
+    .review-nudge { gap: 12px; border-color: var(--green); background: var(--green-soft); flex-wrap: wrap; }
+    .admin-tools { gap: 8px; flex-wrap: wrap; }
+    .admin-tools .btn { height: 40px; font-size: 13px; }
+    .strong { font-weight: 700; }
+    .danger { color: var(--danger); }
     .hero { height: 330px; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
     .hero img { width: 100%; height: 100%; object-fit: cover; }
     .hero-actions { position: absolute; top: 20px; left: 20px; right: 20px; }
@@ -371,5 +397,29 @@ export class ListingDetailPage implements OnInit {
 
   track(l: ListingDetail): void {
     this.api.recordContact(l.id).subscribe({ error: () => undefined });
+    if (this.auth.isLoggedIn()) {
+      setTimeout(() => this.contacted.set(true), 1500);
+    }
+  }
+
+  readonly contacted = signal(false);
+  readonly isAdmin = computed(() => this.auth.user()?.role === 'ADMIN');
+
+  sellerSlug(l: ListingDetail): string {
+    return slugify(l.seller.displayName);
+  }
+
+  toggleFeatured(l: ListingDetail): void {
+    this.api.adminToggleFeatured(l.id).subscribe({
+      next: (r) => this.listing.set({ ...l, featured: r.featured }),
+      error: (e) => this.error.set(errorMessage(e)),
+    });
+  }
+
+  adminArchive(l: ListingDetail): void {
+    this.api.adminArchive(l.id).subscribe({
+      next: () => this.listing.set({ ...l, status: 'ARCHIVED', featured: false }),
+      error: (e) => this.error.set(errorMessage(e)),
+    });
   }
 }

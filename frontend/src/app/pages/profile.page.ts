@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, Input, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ApiService, errorMessage } from '../core/api.service';
+import { NotifService } from '../core/notif.service';
 import { AuthService } from '../core/auth.service';
 import { CITIES } from '../core/labels';
 import { SellerType } from '../core/models';
@@ -35,6 +36,16 @@ import { IconComponent } from '../shared/icon.component';
         </div>
       }
 
+      <nav class="shortcuts" aria-label="Raccourcis">
+        <a class="chip" routerLink="/mes-annonces"><fr-icon name="list" [size]="16" />Mes annonces</a>
+        <a class="chip" routerLink="/alertes"><fr-icon name="bell" [size]="16" />Mes alertes
+          @if (notif.counts().newListings) { <span class="count">{{ notif.counts().newListings }}</span> }</a>
+        <a class="chip" routerLink="/demandes"><fr-icon name="search" [size]="16" />Demandes
+          @if (notif.counts().matchingRequests) { <span class="count">{{ notif.counts().matchingRequests }}</span> }</a>
+        <a class="chip" routerLink="/vendre/lot"><fr-icon name="plus" [size]="16" />Publication express</a>
+        @if (userId()) { <a class="chip" [routerLink]="['/casse', userId()]"><fr-icon name="home" [size]="16" />Ma vitrine</a> }
+      </nav>
+
       <form class="card card-pad stack form" (ngSubmit)="saveProfile()" #pf="ngForm">
         <h2 class="section-title">Informations</h2>
         <div class="segmented" role="group" aria-label="Type de compte">
@@ -45,6 +56,19 @@ import { IconComponent } from '../shared/icon.component';
           <div class="field">
             <label for="shop">Nom de la casse</label>
             <input id="shop" class="input" name="shopName" [(ngModel)]="shopName" required maxlength="120">
+          </div>
+          <div class="field">
+            <label for="address">Adresse de la casse</label>
+            <input id="address" class="input" name="address" [(ngModel)]="address" maxlength="200" placeholder="Route de Gabès km 4, Sfax">
+            <span class="muted small">Affichée sur ta vitrine avec un bouton « Itinéraire » Google Maps.</span>
+          </div>
+          <div class="field">
+            <label for="hours">Horaires</label>
+            <input id="hours" class="input" name="openingHours" [(ngModel)]="openingHours" maxlength="120" placeholder="Lun-Sam 8h-18h">
+          </div>
+          <div class="field">
+            <label for="bio">Présentation</label>
+            <textarea id="bio" class="input" name="bio" [(ngModel)]="bio" maxlength="500" rows="3" placeholder="Spécialiste Peugeot / Renault, livraison possible dans toute la Tunisie…"></textarea>
           </div>
         }
         <div class="field">
@@ -117,6 +141,9 @@ import { IconComponent } from '../shared/icon.component';
     <fr-bottom-nav />
   `,
   styles: `
+    .shortcuts { display: flex; gap: 8px; flex-wrap: wrap; }
+    .shortcuts .chip { color: var(--ink-2); }
+    .count { background: var(--danger); color: var(--white); border-radius: 999px; font-size: 11px; padding: 1px 6px; }
     .h1 { font-size: 24px; }
     .form { gap: 14px; padding: 18px; }
     .logout { color: var(--ink-2); }
@@ -148,6 +175,11 @@ export class ProfilePage implements OnInit {
   isAdmin = false;
   sellerType: SellerType = 'PARTICULIER';
   shopName = '';
+  address = '';
+  openingHours = '';
+  bio = '';
+  readonly notif = inject(NotifService);
+  readonly userId = computed(() => this.auth.user()?.id ?? null);
   fullName = '';
   email = '';
   phone = '';
@@ -167,6 +199,9 @@ export class ProfilePage implements OnInit {
     if (user) {
       this.sellerType = user.sellerType;
       this.shopName = user.shopName ?? '';
+      this.address = user.address ?? '';
+      this.openingHours = user.openingHours ?? '';
+      this.bio = user.bio ?? '';
       this.fullName = user.fullName;
       this.email = user.email ?? '';
       this.phone = user.phone ?? '';
@@ -193,6 +228,9 @@ export class ProfilePage implements OnInit {
         city: this.city,
         sellerType: this.sellerType,
         shopName: this.sellerType === 'PRO' ? this.shopName : undefined,
+        address: this.sellerType === 'PRO' ? this.address || undefined : undefined,
+        openingHours: this.sellerType === 'PRO' ? this.openingHours || undefined : undefined,
+        bio: this.bio || undefined,
       })
       .subscribe({
         next: (user) => {
