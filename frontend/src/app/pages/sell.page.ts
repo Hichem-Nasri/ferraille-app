@@ -30,6 +30,10 @@ import { PartIconComponent } from '../shared/part-icon.component';
           <h2 class="section-title">Photos</h2>
           <span class="muted small">{{ photos().length }} / 8 · la 1re est la couverture</span>
         </div>
+        <div class="notice small-notice">
+          <fr-icon name="camera" [size]="16" />
+          <span>Prends tes propres photos de la pièce. Les images copiées sur Internet font fuir les acheteurs.</span>
+        </div>
         <div class="photos">
           @for (p of photos(); track p; let i = $index) {
             <div class="photo" [class.cover]="i === 0">
@@ -91,12 +95,14 @@ import { PartIconComponent } from '../shared/part-icon.component';
                 @for (m of makes; track m) { <option [value]="m">{{ m }}</option> }
               </select>
               <input class="input" name="fitModel" [(ngModel)]="fitModel" placeholder="Modèle" aria-label="Modèle">
-              <input class="input" type="number" name="fitFrom" [(ngModel)]="fitFrom" placeholder="Année début" aria-label="Année de début">
-              <input class="input" type="number" name="fitTo" [(ngModel)]="fitTo" placeholder="Année fin" aria-label="Année de fin">
+              <input class="input" type="number" name="fitFrom" [(ngModel)]="fitFrom" placeholder="Année début" aria-label="Année de début" min="1950" [max]="maxYear">
+              <input class="input" type="number" name="fitTo" [(ngModel)]="fitTo" placeholder="Année fin" aria-label="Année de fin" min="1950" [max]="maxYear">
             </div>
+            <span class="muted small">Laisse les années vides si la pièce va sur tous les modèles.</span>
+            @if (!yearsValid()) { <span class="error">Années invalides (entre 1950 et {{ maxYear }}, début avant fin).</span> }
             <div class="row">
               <button type="button" class="btn btn-ghost grow" (click)="fitFormOpen.set(false)">Annuler</button>
-              <button type="button" class="btn btn-primary grow" (click)="addFit()" [disabled]="!fitMake || !fitModel.trim()">Ajouter</button>
+              <button type="button" class="btn btn-primary grow" (click)="addFit()" [disabled]="!fitMake || !fitModel.trim() || !yearsValid()">Ajouter</button>
             </div>
           </div>
         }
@@ -125,9 +131,9 @@ import { PartIconComponent } from '../shared/part-icon.component';
 
       <div class="grid-2">
         <div class="field">
-          <label for="price">Ton prix</label>
+          <label for="price">Ton prix <span class="muted small">(facultatif)</span></label>
           <div class="price-input">
-            <input id="price" type="number" name="price" min="1" step="1" [(ngModel)]="price" (ngModelChange)="onPrice($event)" required>
+            <input id="price" type="number" name="price" min="0" step="1" [(ngModel)]="price" (ngModelChange)="onPrice($event)" placeholder="À discuter">
             <span>DT</span>
           </div>
         </div>
@@ -238,6 +244,12 @@ export class SellPage implements OnInit {
   fitTo: number | null = null;
 
   whatsapp = '';
+  readonly maxYear = new Date().getFullYear() + 1;
+
+  yearsValid(): boolean {
+    const ok = (y: number | null) => y === null || (y >= 1950 && y <= this.maxYear);
+    return ok(this.fitFrom) && ok(this.fitTo) && (this.fitFrom === null || this.fitTo === null || this.fitFrom <= this.fitTo);
+  }
   readonly needsContact = computed(() => !this.auth.user()?.hasContact);
   readonly contactLabel = computed(() => {
     const u = this.auth.user();
@@ -305,8 +317,8 @@ export class SellPage implements OnInit {
 
   submit(): void {
     const category = this.category();
-    const price = this.price;
-    if (!category || !price) {
+    const price = this.price && this.price >= 5 ? this.price : null;
+    if (!category) {
       return;
     }
     this.saving.set(true);

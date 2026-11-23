@@ -149,9 +149,9 @@ public class SeoService {
         Category category = l.getCategory();
         String vehicles = fitsSentence(l.getFits());
         String title = l.getTitle() + (vehicles.isEmpty() ? "" : " — " + firstFit(l.getFits()))
-                + " d'occasion | " + price(l.getPrice()) + " DT | " + SITE_NAME;
+                + " d'occasion | " + price(l.getPrice()) + " | " + SITE_NAME;
         String description = truncate(l.getTitle() + " d'occasion, " + conditionLabel(l.getCondition()).toLowerCase()
-                + ", " + price(l.getPrice()) + " DT à " + l.getCity() + ". "
+                + ", " + price(l.getPrice()) + " à " + l.getCity() + ". "
                 + (vehicles.isEmpty() ? "" : "Compatible " + vehicles + ". ")
                 + "Contacte directement le vendeur par WhatsApp ou téléphone.", 160);
 
@@ -163,7 +163,7 @@ public class SeoService {
         StringBuilder body = new StringBuilder()
                 .append(breadcrumbHtml(crumbs))
                 .append("<article><h1>").append(esc(l.getTitle())).append("</h1>")
-                .append("<p><strong>").append(price(l.getPrice())).append(" DT</strong>")
+                .append("<p><strong>").append(price(l.getPrice())).append("</strong>")
                 .append(l.isNegotiable() ? " · prix négociable" : "")
                 .append(" · état : ").append(esc(conditionLabel(l.getCondition())))
                 .append(" · ").append(esc(l.getCity())).append("</p>");
@@ -208,7 +208,7 @@ public class SeoService {
         }
         Map<String, Object> offer = node("Offer");
         offer.put("url", publicUrl + listingPath(l));
-        offer.put("price", l.getPrice().setScale(3).toPlainString());
+        offer.put("price", l.getPrice() == null ? null : l.getPrice().setScale(3).toPlainString());
         offer.put("priceCurrency", "TND");
         offer.put("itemCondition", schemaCondition(l.getCondition()));
         offer.put("availability", l.getStatus() == ListingStatus.ACTIVE
@@ -217,7 +217,9 @@ public class SeoService {
         Map<String, Object> seller = node(l.getSeller().getSellerType() == SellerType.PRO ? "Organization" : "Person");
         seller.put("name", l.getSeller().getDisplayName());
         offer.put("seller", seller);
-        product.put("offers", offer);
+        if (l.getPrice() != null) {
+            product.put("offers", offer);
+        }
 
         String image = l.getPhotos().isEmpty() ? publicUrl + "/og-image.png" : absolute(l.getPhotos().get(0));
         return new SeoPage(200, title, description, listingPath(l), image, "product", false,
@@ -336,7 +338,7 @@ public class SeoService {
         StringBuilder sb = new StringBuilder("<ul>");
         for (Listing l : listings) {
             sb.append("<li><a href=\"").append(listingPath(l)).append("\">").append(esc(l.getTitle())).append("</a> — ")
-                    .append(price(l.getPrice())).append(" DT, ").append(esc(l.getCity()));
+                    .append(price(l.getPrice())).append(", ").append(esc(l.getCity()));
             if (!l.getFits().isEmpty()) {
                 sb.append(" (").append(esc(firstFit(l.getFits()))).append(")");
             }
@@ -417,7 +419,10 @@ public class SeoService {
     }
 
     private static String price(BigDecimal price) {
-        return price.stripTrailingZeros().toPlainString().replace('.', ',');
+        if (price == null) {
+            return "Prix à discuter";
+        }
+        return price.stripTrailingZeros().toPlainString().replace('.', ',') + " DT";
     }
 
     private static String truncate(String text, int max) {

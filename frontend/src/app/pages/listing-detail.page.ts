@@ -51,8 +51,13 @@ import { PartIconComponent } from '../shared/part-icon.component';
           </div>
           <h1 class="title">{{ l.title }}</h1>
           <div class="row price-row">
-            <span class="price big">{{ l.price | dinar }}</span>
-            @if (l.negotiable) { <span class="muted">Prix négociable</span> }
+            @if (l.price !== null) {
+              <span class="price big">{{ l.price | dinar }}</span>
+              @if (l.negotiable) { <span class="muted">Prix négociable</span> }
+            } @else {
+              <span class="price big discuss">Prix à discuter</span>
+              <span class="muted" dir="rtl" lang="ar">السوم بالتليفون</span>
+            }
           </div>
         </div>
 
@@ -138,7 +143,7 @@ import { PartIconComponent } from '../shared/part-icon.component';
       } @else if (l.status === 'ACTIVE' && (waNumber(l) || l.seller.facebookUrl)) {
         <div class="bottom-bar wide mobile-only">
           @if (waNumber(l)) {
-            <a class="btn contact whatsapp grow" [href]="whatsapp(l)" target="_blank" rel="noopener" (click)="track(l)">WhatsApp · {{ l.price | dinar }}</a>
+            <a class="btn contact whatsapp grow" [href]="whatsapp(l)" target="_blank" rel="noopener" (click)="track(l)">WhatsApp{{ l.price !== null ? ' · ' + (l.price | dinar) : '' }}</a>
           }
           @if (l.seller.facebookUrl) {
             <a class="btn contact messenger icon-only" [href]="l.seller.facebookUrl" target="_blank" rel="noopener" (click)="track(l)" aria-label="Écrire sur Messenger"><fr-icon name="chat" [size]="20" /></a>
@@ -167,6 +172,7 @@ import { PartIconComponent } from '../shared/part-icon.component';
     .title { font-size: 24px; line-height: 1.2; }
     .price-row { align-items: baseline; }
     .big { font-size: 30px; color: var(--green); }
+    .discuss { font-size: 24px; }
     .strong { font-size: 14px; font-weight: 600; }
     .notice.warn { background: var(--warn-soft); color: var(--warn); }
     .spec { padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; border-radius: 14px; }
@@ -256,14 +262,14 @@ export class ListingDetailPage implements OnInit {
   private updateSeo(l: ListingDetail): void {
     const meta = categoryMeta(l.category);
     const path = `/piece/${l.id}/${l.slug}`;
-    const price = Number(l.price).toLocaleString('fr-FR', { maximumFractionDigits: 3 });
+    const price = l.price === null ? 'Prix à discuter' : `${Number(l.price).toLocaleString('fr-FR', { maximumFractionDigits: 3 })} DT`;
     const fit = l.fits[0] ? ` — ${l.fits[0].make} ${l.fits[0].model}` : '';
     const vehicles = l.fits
       .slice(0, 3)
       .map((f) => `${f.make} ${f.model}`)
       .join(', ');
     const description =
-      `${l.title} d'occasion, ${conditionLabel(l.condition).toLowerCase()}, ${price} DT à ${l.city}. ` +
+      `${l.title} d'occasion, ${conditionLabel(l.condition).toLowerCase()}, ${price} à ${l.city}. ` +
       (vehicles ? `Compatible ${vehicles}. ` : '') +
       'Contacte directement le vendeur par WhatsApp ou téléphone.';
     const condition =
@@ -273,7 +279,7 @@ export class ListingDetailPage implements OnInit {
           ? 'https://schema.org/DamagedCondition'
           : 'https://schema.org/UsedCondition';
     this.seo.set({
-      title: `${l.title}${fit} d'occasion | ${price} DT | ${SITE_NAME}`,
+      title: `${l.title}${fit} d'occasion | ${price} | ${SITE_NAME}`,
       description,
       path,
       image: l.photos[0],
@@ -290,7 +296,9 @@ export class ListingDetailPage implements OnInit {
           category: `Pièces auto > ${meta.label}`,
           itemCondition: condition,
           ...(l.fits[0] ? { brand: { '@type': 'Brand', name: l.fits[0].make } } : {}),
-          offers: {
+          ...(l.price !== null
+            ? {
+                offers: {
             '@type': 'Offer',
             url: this.seo.origin + path,
             price: Number(l.price).toFixed(3),
@@ -300,6 +308,8 @@ export class ListingDetailPage implements OnInit {
             areaServed: 'TN',
             seller: { '@type': l.seller.sellerType === 'PRO' ? 'Organization' : 'Person', name: l.seller.displayName },
           },
+              }
+            : {}),
         },
         {
           '@type': 'BreadcrumbList',

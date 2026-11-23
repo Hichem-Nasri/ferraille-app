@@ -75,7 +75,7 @@ export interface ListingSummary {
   id: number;
   slug: string;
   title: string;
-  price: number;
+  price: number | null;
   category: Category;
   condition: PartCondition;
   city: string;
@@ -107,7 +107,7 @@ export interface ListingDetail {
   slug: string;
   title: string;
   description?: string;
-  price: number;
+  price: number | null;
   negotiable: boolean;
   category: Category;
   condition: PartCondition;
@@ -126,7 +126,7 @@ export interface ListingRequest {
   description?: string;
   category: Category;
   condition: PartCondition;
-  price: number;
+  price: number | null;
   negotiable: boolean;
   city: string;
   oemReference?: string;

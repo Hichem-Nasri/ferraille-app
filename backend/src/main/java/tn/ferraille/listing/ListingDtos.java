@@ -42,7 +42,7 @@ public final class ListingDtos {
             @Size(max = 4000) String description,
             @NotNull Category category,
             @NotNull PartCondition condition,
-            @NotNull @DecimalMin("1.000") @DecimalMax("999999.000") BigDecimal price,
+            @DecimalMin("0.000") @DecimalMax("999999.000") BigDecimal price,
             boolean negotiable,
             @NotBlank @Size(max = 80) String city,
             @Size(max = 60) String oemReference,

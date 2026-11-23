@@ -53,7 +53,7 @@ public class Listing {
     @Column(name = "part_condition", nullable = false)
     private PartCondition condition;
 
-    @Column(nullable = false, precision = 12, scale = 3)
+    @Column(precision = 12, scale = 3)
     private BigDecimal price;
 
     @Column(nullable = false)

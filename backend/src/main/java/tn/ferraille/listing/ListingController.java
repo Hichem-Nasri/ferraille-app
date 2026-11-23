@@ -47,8 +47,8 @@ public class ListingController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         Sort order = switch (sort) {
-            case "price_asc" -> Sort.by("price").ascending();
-            case "price_desc" -> Sort.by("price").descending();
+            case "price_asc" -> Sort.by(Sort.Order.asc("price").nullsLast());
+            case "price_desc" -> Sort.by(Sort.Order.desc("price").nullsLast());
             default -> Sort.by("createdAt").descending();
         };
         var filter = new ListingSpecifications.Filter(q, category, condition, make, model, year, city, minPrice, maxPrice, proOnly);

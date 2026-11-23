@@ -4,7 +4,7 @@ import { Pipe, PipeTransform } from '@angular/core';
 export class DinarPipe implements PipeTransform {
   transform(value: number | null | undefined, precise = false): string {
     if (value === null || value === undefined) {
-      return '';
+      return 'Prix à discuter';
     }
     const amount = Number(value);
     const formatted = precise || !Number.isInteger(amount)

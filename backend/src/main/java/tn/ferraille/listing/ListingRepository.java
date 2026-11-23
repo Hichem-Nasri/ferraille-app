@@ -22,6 +22,12 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
 
     List<Listing> findByStatusOrderByCreatedAtDesc(ListingStatus status, Pageable pageable);
 
+    @Query("select count(l) from Listing l where l.seller.id = :sellerId and lower(trim(l.title)) = lower(:title) "
+            + "and ((:price is null and l.price is null) or l.price = :price) "
+            + "and l.status <> tn.ferraille.listing.ListingStatus.ARCHIVED and l.createdAt > :since")
+    long countRecentDuplicates(@Param("sellerId") Long sellerId, @Param("title") String title,
+                               @Param("price") java.math.BigDecimal price, @Param("since") java.time.Instant since);
+
     @Modifying
     @Query("update Listing l set l.status = tn.ferraille.listing.ListingStatus.ARCHIVED where l.seller.id = :sellerId")
     void archiveAllBySeller(@Param("sellerId") Long sellerId);

@@ -54,6 +54,12 @@ public class ListingService {
         if (!seller.hasContact()) {
             throw ApiException.badRequest("Ajoute ton numéro WhatsApp ou de téléphone pour que les acheteurs puissent te contacter");
         }
+        java.math.BigDecimal normalizedPrice = request.price() == null || request.price().compareTo(new java.math.BigDecimal("5")) < 0
+                ? null : Money.of(request.price());
+        if (listingRepository.countRecentDuplicates(sellerId, request.title().trim(), normalizedPrice,
+                java.time.Instant.now().minus(java.time.Duration.ofHours(24))) > 0) {
+            throw ApiException.conflict("Tu as déjà publié cette annonce aujourd'hui. Modifie-la plutôt que de la republier.");
+        }
         Listing listing = new Listing();
         listing.setSeller(seller);
         apply(listing, request);
@@ -100,7 +106,11 @@ public class ListingService {
     }
 
     private void apply(Listing listing, ListingRequest r) {
+        int maxYear = java.time.Year.now().getValue() + 1;
         for (FitDto fit : r.fits()) {
+            if ((fit.yearFrom() != null && fit.yearFrom() > maxYear) || (fit.yearTo() != null && fit.yearTo() > maxYear)) {
+                throw ApiException.badRequest("Année invalide pour " + fit.make() + " " + fit.model() + " : laisse vide si la pièce va sur toutes les années");
+            }
             if (fit.yearFrom() != null && fit.yearTo() != null && fit.yearFrom() > fit.yearTo()) {
                 throw ApiException.badRequest("Années de compatibilité invalides pour " + fit.make() + " " + fit.model());
             }
@@ -109,7 +119,7 @@ public class ListingService {
         listing.setDescription(r.description());
         listing.setCategory(r.category());
         listing.setCondition(r.condition());
-        listing.setPrice(Money.of(r.price()));
+        listing.setPrice(r.price() == null || r.price().compareTo(new java.math.BigDecimal("5")) < 0 ? null : Money.of(r.price()));
         listing.setNegotiable(r.negotiable());
         listing.setCity(r.city().trim());
         listing.setOemReference(r.oemReference());

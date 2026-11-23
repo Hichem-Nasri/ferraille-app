@@ -66,7 +66,7 @@ public class OrderService {
             throw ApiException.badRequest("Tu ne peux pas acheter ta propre annonce");
         }
 
-        if (!ordersEnabled) {
+        if (!ordersEnabled || listingService.require(request.listingId()).getPrice() == null) {
             throw ApiException.badRequest("Les commandes en ligne ne sont pas encore ouvertes : contacte directement le vendeur");
         }
         if (!enabledPaymentMethods.contains(request.paymentMethod())) {
