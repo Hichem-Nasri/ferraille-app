@@ -1,0 +1,35 @@
+name: Promo assets
+
+on:
+  workflow_dispatch:
+    inputs:
+      count:
+        description: Nombre d'annonces récentes
+        default: "12"
+
+jobs:
+  assets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer les annonces récentes et leurs photos
+        env:
+          COUNT: ${{ inputs.count }}
+        run: |
+          mkdir -p out/photos
+          curl -fsS "https://ferraille-tn.com/api/listings?sort=recent&size=${COUNT}" -o list.json
+          for id in $(jq -r '.content[].id' list.json); do
+            curl -fsS "https://ferraille-tn.com/api/listings/$id" \
+              | jq '{id, slug, title, description, price, negotiable, category, condition, city, oemReference, photos, fits, createdAt, sellerId: .seller.id, sellerName: .seller.displayName, sellerType: .seller.sellerType}' > out/$id.json
+            n=0
+            for p in $(jq -r '.photos[]' out/$id.json); do
+              n=$((n+1))
+              ext="${p##*.}"
+              curl -fsS "https://ferraille-tn.com$p" -o "out/photos/${id}_${n}.${ext}" || true
+            done
+            jq -r '"\(.id) | seller \(.sellerId) | \(.createdAt) | \(.title)"' out/$id.json
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: promo-assets
+          path: out
+          retention-days: 3
