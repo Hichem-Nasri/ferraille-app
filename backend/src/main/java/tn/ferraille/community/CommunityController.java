@@ -34,6 +34,7 @@ import java.util.Map;
 public class CommunityController {
 
     private final CommunityService service;
+    private final VehicleIndex vehicleIndex;
 
     @GetMapping("/requests")
     public PageResponse<PartRequestView> requests(@AuthenticationPrincipal AuthenticatedUser user,
@@ -82,6 +83,11 @@ public class CommunityController {
     public ReviewView review(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable Long id,
                              @Valid @RequestBody ReviewCreate body) {
         return service.review(user.id(), id, body);
+    }
+
+    @GetMapping("/vehicles")
+    public List<VehicleIndex.VehicleEntry> vehicles() {
+        return vehicleIndex.all();
     }
 
     @GetMapping("/casses")

@@ -25,6 +25,9 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
         @case ('chevron-left') { <svg:path d="m15 18-6-6 6-6"/> }
         @case ('chevron-right') { <svg:path d="m9 18 6-6-6-6"/> }
         @case ('check') { <svg:path d="M20 6 9 17l-5-5"/> }
+        @case ('link') { <svg:path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><svg:path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/> }
+        @case ('download') { <svg:path d="M12 3v12M7 10l5 5 5-5M5 21h14"/> }
+        @case ('image') { <svg:rect x="3" y="3" width="18" height="18" rx="3"/><svg:circle cx="9" cy="9" r="2"/><svg:path d="m21 15-5-5L5 21"/> }
         @case ('check-circle') { <svg:circle cx="12" cy="12" r="10"/><svg:path d="m8 12 3 3 5-6"/> }
         @case ('camera') { <svg:path d="M4 8h3l2-3h6l2 3h3v11H4z"/><svg:circle cx="12" cy="13" r="3.5"/> }
         @case ('wallet') { <svg:path d="M3 7h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><svg:path d="M3 7V6a2 2 0 0 1 2-2h11"/><svg:circle cx="16.5" cy="13.5" r="1.2"/> }

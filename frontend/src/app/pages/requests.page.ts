@@ -117,6 +117,7 @@ type Tab = 'all' | 'forme' | 'mine';
                 @if (r.category) { <span class="chip small-chip">{{ catLabel(r.category) }}</span> }
               </div>
               <p class="desc">{{ r.description }}</p>
+              <a class="share-link small" [href]="shareRequest(r)" target="_blank" rel="noopener">Partager sur WhatsApp pour l'aider →</a>
               <span class="muted small">{{ r.author.displayName }}@if (r.city) { · {{ r.city }} } · {{ r.createdAt | date: 'd MMM' }}@if (r.status === 'CLOSED') { · fermée }</span>
               @if (r.mine) {
                 @if (r.status === 'OPEN') {
@@ -163,6 +164,7 @@ type Tab = 'all' | 'forme' | 'mine';
     .icon-only { width: 48px; padding: 0; flex-shrink: 0; }
     .link { border: 0; background: none; cursor: pointer; font-weight: 600; font-size: 13px; padding: 4px 0; text-align: start; }
     .danger { color: var(--danger); }
+    .share-link { color: var(--green); font-weight: 600; }
   `,
 })
 export class RequestsPage implements OnInit {
@@ -280,6 +282,11 @@ export class RequestsPage implements OnInit {
   wa(r: PartRequest): string {
     const number = r.author.whatsapp || r.author.phone || '';
     return whatsappLink(number, `Bonjour, j'ai vu votre demande sur Ferraille : ${r.make} ${r.model}${r.year ? ' ' + r.year : ''} — « ${r.description} ». J'ai peut-être la pièce.`);
+  }
+
+  shareRequest(r: PartRequest): string {
+    const text = `Quelqu'un cherche : ${r.make} ${r.model}${r.year ? ' ' + r.year : ''} — ${r.description}. Tu l'as ? Réponds-lui ici 👇\n${location.origin}/demandes?src=partage-demande`;
+    return `https://wa.me/?text=${encodeURIComponent(text)}`;
   }
 
   tel(phone: string): string {

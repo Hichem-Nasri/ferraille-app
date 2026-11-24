@@ -11,12 +11,14 @@ import { phoneLink, whatsappLink } from '../core/contact';
 import { ListingDetail } from '../core/models';
 import { slugify } from '../core/slug';
 import { IconComponent } from '../shared/icon.component';
+import { ShareComponent } from '../shared/share.component';
+import { buildListingImage } from '../core/share-image';
 import { PartIconComponent } from '../shared/part-icon.component';
 
 @Component({
   selector: 'fr-listing-detail-page',
   standalone: true,
-  imports: [RouterLink, DinarPipe, IconComponent, PartIconComponent],
+  imports: [RouterLink, DinarPipe, IconComponent, PartIconComponent, ShareComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (error()) {
@@ -71,11 +73,12 @@ import { PartIconComponent } from '../shared/part-icon.component';
 
         <div class="grid-3">
           @for (f of l.fits.slice(0, 3); track $index) {
-            <div class="card spec">
+            <a class="card spec" [routerLink]="vehicleLink(f.make, f.model)">
               <span class="muted small">{{ f.make }}</span>
               <span class="spec-value">{{ f.model }}</span>
               <span class="muted small">{{ years(f.yearFrom, f.yearTo) }}</span>
-            </div>
+              <span class="small see-more">Toutes les pièces →</span>
+            </a>
           }
         </div>
         @if (l.oemReference) {
@@ -148,6 +151,31 @@ import { PartIconComponent } from '../shared/part-icon.component';
           </section>
         }
 
+        @if (l.status === 'ACTIVE') {
+          <section class="card card-pad stack gap8 share-box">
+            <span class="strong">{{ isOwner() ? 'Partage ton annonce pour vendre plus vite' : 'Tu connais quelqu’un qui cherche cette pièce ?' }}</span>
+            <fr-share [url]="'/piece/' + l.id + '/' + l.slug" [text]="shareText(l)" [src]="isOwner() ? 'vendeur' : 'partage'" />
+            <button type="button" class="btn btn-ghost" (click)="makeImage(l)" [disabled]="imageBusy()">
+              <fr-icon name="image" [size]="18" />{{ imageBusy() ? 'Création…' : 'Créer une image à partager (story, groupes)' }}
+            </button>
+          </section>
+        }
+
+        @if (imageUrl(); as img) {
+          <div class="overlay" role="dialog" aria-modal="true" aria-label="Image à partager" (click)="closeImage()">
+            <div class="sheet stack" (click)="$event.stopPropagation()">
+              <img [src]="img" alt="Aperçu de l'image à partager" class="preview">
+              <div class="row sheet-actions">
+                @if (canShareFiles()) {
+                  <button type="button" class="btn btn-primary grow" (click)="shareImage(l)"><fr-icon name="share" [size]="18" />Partager</button>
+                }
+                <a class="btn btn-ghost grow" [href]="img" [attr.download]="'ferraille-' + l.id + '.jpg'"><fr-icon name="download" [size]="18" />Télécharger</a>
+                <button type="button" class="btn btn-ghost" (click)="closeImage()">Fermer</button>
+              </div>
+            </div>
+          </div>
+        }
+
         <div class="row protect">
           <fr-icon name="shield" class="green" />
           <span class="muted"><strong class="ink">Conseils :</strong> vérifie la pièce (référence, état) avant de payer, privilégie la remise en main propre ou le paiement à la livraison, et ne verse jamais d'acompte à un inconnu.</span>
@@ -177,6 +205,13 @@ import { PartIconComponent } from '../shared/part-icon.component';
     }
   `,
   styles: `
+    a.spec { color: var(--ink); font-weight: 400; }
+    .see-more { color: var(--green); font-weight: 600; margin-top: 4px; }
+    .share-box { gap: 10px; }
+    .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .sheet { background: var(--white); border-radius: 20px; padding: 14px; gap: 12px; max-width: 440px; width: 100%; max-height: 92vh; }
+    .preview { width: 100%; max-height: 64vh; object-fit: contain; border-radius: 12px; }
+    .sheet-actions { gap: 8px; flex-wrap: wrap; }
     .seller-card { color: var(--ink); font-weight: 400; }
     .see-shop { color: var(--green); font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0; }
     .review-nudge { gap: 12px; border-color: var(--green); background: var(--green-soft); flex-wrap: wrap; }
@@ -393,6 +428,58 @@ export class ListingDetailPage implements OnInit {
 
   call(phone: string): string {
     return phoneLink(phone);
+  }
+
+  readonly imageBusy = signal(false);
+  readonly imageUrl = signal<string | null>(null);
+  private imageBlob: Blob | null = null;
+
+  vehicleLink(make: string, model: string): string[] {
+    const m = slugify(make);
+    const mo = slugify(model);
+    return mo && model.trim().length >= 2 ? ['/pieces-auto', m, mo] : ['/pieces-auto', m];
+  }
+
+  shareText(l: ListingDetail): string {
+    const price = l.price === null ? 'prix à discuter' : `${Math.round(l.price)} DT`;
+    return `${l.title} — ${price}, ${l.city}. Dispo sur Ferraille 🔧`;
+  }
+
+  canShareFiles(): boolean {
+    if (!this.imageBlob || typeof navigator.canShare !== 'function') {
+      return false;
+    }
+    return navigator.canShare({ files: [new File([this.imageBlob], 'ferraille.jpg', { type: 'image/jpeg' })] });
+  }
+
+  makeImage(l: ListingDetail): void {
+    this.imageBusy.set(true);
+    buildListingImage(l, `ferraille-tn.com/piece/${l.id}`)
+      .then((blob) => {
+        this.imageBlob = blob;
+        this.imageUrl.set(URL.createObjectURL(blob));
+      })
+      .catch(() => this.error.set("Impossible de créer l'image."))
+      .finally(() => this.imageBusy.set(false));
+  }
+
+  shareImage(l: ListingDetail): void {
+    if (!this.imageBlob) {
+      return;
+    }
+    const file = new File([this.imageBlob], `ferraille-${l.id}.jpg`, { type: 'image/jpeg' });
+    navigator
+      .share({ files: [file], text: `${this.shareText(l)}\nhttps://ferraille-tn.com/piece/${l.id}?src=image` })
+      .catch(() => undefined);
+  }
+
+  closeImage(): void {
+    const url = this.imageUrl();
+    if (url) {
+      URL.revokeObjectURL(url);
+    }
+    this.imageUrl.set(null);
+    this.imageBlob = null;
   }
 
   track(l: ListingDetail): void {

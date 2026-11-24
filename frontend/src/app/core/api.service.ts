@@ -10,6 +10,7 @@ import {
   SavedSearch,
   SavedSearchCreate,
   SellerProfile,
+  VehicleEntry,
   Carrier,
   CarrierOption,
   CheckoutQuote,
@@ -155,6 +156,27 @@ export class ApiService {
 
   review(sellerId: number, rating: number, comment: string): Observable<Review> {
     return this.http.post<Review>(`/api/sellers/${sellerId}/reviews`, { rating, comment });
+  }
+
+  vehicles(): Observable<VehicleEntry[]> {
+    return this.http.get<VehicleEntry[]>('/api/vehicles');
+  }
+
+  publishFor(userId: number, listings: ListingRequest[]): Observable<ListingDetail[]> {
+    return this.http.post<ListingDetail[]>(`/api/admin/users/${userId}/listings/bulk`, { listings });
+  }
+
+  createManagedSeller(body: {
+    fullName: string;
+    shopName?: string;
+    sellerType: SellerType;
+    whatsapp?: string;
+    phone?: string;
+    city?: string;
+    address?: string;
+    consent: boolean;
+  }): Observable<{ id: number; name: string }> {
+    return this.http.post<{ id: number; name: string }>('/api/admin/sellers', body);
   }
 
   casses(city?: string): Observable<CasseCard[]> {

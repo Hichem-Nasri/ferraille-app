@@ -6,6 +6,7 @@ import { EMPTY, Subject, catchError, debounceTime, map, switchMap } from 'rxjs';
 import { ApiService, errorMessage } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { GarageService } from '../core/garage.service';
+import { VehicleEntry } from '../core/models';
 import { I18nService, TranslatePipe } from '../core/i18n';
 import { NotifService } from '../core/notif.service';
 import { slugify } from '../core/slug';
@@ -155,6 +156,19 @@ import { PartIconComponent } from '../shared/part-icon.component';
           <a class="btn btn-ghost" [routerLink]="cassesLink()">{{ 'Casses' | t }}</a>
         </div>
       </section>
+
+      @if (popular().length) {
+        <section class="stack popular">
+          <h2 class="section-title">Pièces par modèle</h2>
+          <div class="models">
+            @for (v of popular(); track v.makeSlug + v.modelSlug) {
+              <a class="chip" [routerLink]="v.modelSlug ? ['/pieces-auto', v.makeSlug, v.modelSlug] : ['/pieces-auto', v.makeSlug]">
+                {{ v.model ? v.make + ' ' + v.model : v.make }} <span class="muted">{{ v.count }}</span>
+              </a>
+            }
+          </div>
+        </section>
+      }
     </div>
     <fr-bottom-nav />
   `,
@@ -187,6 +201,9 @@ import { PartIconComponent } from '../shared/part-icon.component';
     .lang { border: 1.5px solid var(--line); background: var(--white); border-radius: 12px; height: 44px; padding: 0 12px; font-weight: 700; font-size: 14px; cursor: pointer; color: var(--ink-2); }
     .rel { position: relative; }
     .dot { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: var(--danger); color: var(--white); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+    .popular { gap: 12px; }
+    .models { display: flex; gap: 8px; flex-wrap: wrap; }
+    .models .chip { gap: 6px; }
     .helpers { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
     .helper { gap: 8px; }
     .helper .btn { margin-top: auto; }
@@ -213,6 +230,7 @@ export class HomePage implements OnInit {
   readonly notif = inject(NotifService);
   private readonly router = inject(Router);
   readonly alertSaving = signal(false);
+  readonly popular = signal<VehicleEntry[]>([]);
   readonly alertMessage = signal<string | null>(null);
   private readonly queryText = signal('');
   readonly placeholder = computed(() =>
@@ -284,6 +302,10 @@ export class HomePage implements OnInit {
   private readonly searches = new Subject<{ filter: ListingFilter; append: boolean }>();
 
   ngOnInit(): void {
+    this.api.vehicles().subscribe({
+      next: (list) => this.popular.set([...list.filter((x) => !x.model).slice(0, 8), ...list.filter((x) => x.model).slice(0, 16)]),
+      error: () => undefined,
+    });
     const v = this.garage.vehicle();
     this.draftMake = v?.make ?? '';
     this.draftModel = v?.model ?? '';

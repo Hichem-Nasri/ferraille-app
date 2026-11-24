@@ -50,6 +50,7 @@ public class SeoService {
     private final ListingRepository listingRepository;
     private final tn.ferraille.community.CommunityService communityService;
     private final tn.ferraille.community.PartRequestRepository partRequestRepository;
+    private final tn.ferraille.community.VehicleIndex vehicleIndex;
     private final ObjectMapper objectMapper;
     private final RestClient restClient;
     private final String publicUrl;
@@ -61,11 +62,13 @@ public class SeoService {
     public SeoService(ListingRepository listingRepository, ObjectMapper objectMapper,
                       tn.ferraille.community.CommunityService communityService,
                       tn.ferraille.community.PartRequestRepository partRequestRepository,
+                      tn.ferraille.community.VehicleIndex vehicleIndex,
                       @Value("${ferraille.public-url:http://localhost}") String publicUrl,
                       @Value("${ferraille.frontend-index-url:http://frontend/index.html}") String indexUrl) {
         this.listingRepository = listingRepository;
         this.communityService = communityService;
         this.partRequestRepository = partRequestRepository;
+        this.vehicleIndex = vehicleIndex;
         this.objectMapper = objectMapper;
         this.publicUrl = publicUrl.replaceAll("/+$", "");
         this.indexUrl = indexUrl;
@@ -418,6 +421,49 @@ public class SeoService {
                 "/demandes", publicUrl + "/og-image.png", "website", false, List.of(breadcrumbLd(crumbs)), body.toString());
     }
 
+    @Transactional(readOnly = true)
+    public Optional<SeoPage> vehicle(String makeSlug, String modelSlug) {
+        List<tn.ferraille.community.VehicleIndex.VehicleEntry> all = vehicleIndex.all();
+        var found = all.stream().filter(v -> v.makeSlug().equals(makeSlug)
+                && (modelSlug == null ? v.modelSlug() == null : modelSlug.equals(v.modelSlug()))).findFirst();
+        if (found.isEmpty()) {
+            return Optional.empty();
+        }
+        var v = found.get();
+        List<Listing> listings = listingRepository.findAll(
+                tn.ferraille.listing.ListingSpecifications.search(new tn.ferraille.listing.ListingSpecifications.Filter(
+                        null, null, null, v.make(), v.model(), null, null, null, null, null, null)),
+                PageRequest.of(0, 48, org.springframework.data.domain.Sort.by("createdAt").descending())).getContent();
+        String label = v.label();
+        String title = "Pièces " + label + " d'occasion en Tunisie | " + SITE_NAME;
+        String description = truncate("Pièces détachées " + label + " d'occasion à vendre en Tunisie : " + listings.size()
+                + " annonce" + (listings.size() > 1 ? "s" : "") + " de casses et de particuliers (moteur, carrosserie, "
+                + "optique, électronique…). Contact direct sur WhatsApp.", 300);
+        List<Map.Entry<String, String>> crumbs = new ArrayList<>();
+        crumbs.add(Map.entry("Accueil", "/"));
+        crumbs.add(Map.entry(v.make(), "/pieces-auto/" + v.makeSlug()));
+        if (v.model() != null) {
+            crumbs.add(Map.entry(v.model(), v.path()));
+        }
+        StringBuilder body = new StringBuilder(breadcrumbHtml(crumbs))
+                .append("<h1>Pièces ").append(esc(label)).append(" d'occasion en Tunisie</h1>")
+                .append(listings.isEmpty() ? "<p>Aucune pièce pour le moment.</p>" : listingList(listings));
+        List<tn.ferraille.community.VehicleIndex.VehicleEntry> related = all.stream()
+                .filter(x -> x.makeSlug().equals(v.makeSlug()) && x.modelSlug() != null && !x.path().equals(v.path()))
+                .limit(30).toList();
+        if (!related.isEmpty()) {
+            body.append("<nav><h2>Autres modèles ").append(esc(v.make())).append("</h2><ul>");
+            for (var r : related) {
+                body.append("<li><a href=\"").append(r.path()).append("\">Pièces ").append(esc(r.label())).append("</a></li>");
+            }
+            body.append("</ul></nav>");
+        }
+        String image = listings.isEmpty() || listings.get(0).getPhotos().isEmpty() ? publicUrl + "/og-image.png"
+                : absolute(listings.get(0).getPhotos().get(0));
+        return Optional.of(new SeoPage(200, title, description, v.path(), image, "website", listings.isEmpty(),
+                List.of(breadcrumbLd(crumbs), itemList(listings)), body.toString()));
+    }
+
     public static String sellerPath(Long id, String name) {
         String slug = Slugs.of(name);
         return "/casse/" + id + (slug.isEmpty() ? "" : "/" + slug);
@@ -450,6 +496,9 @@ public class SeoService {
             xml.append(url("/pieces/" + c.slug(), null, "daily", "0.8", List.of()));
         }
         xml.append(url("/casses", null, "daily", "0.8", List.of()));
+        for (var v : vehicleIndex.all()) {
+            xml.append(url(v.path(), null, "daily", v.model() == null ? "0.8" : "0.7", List.of()));
+        }
         xml.append(url("/demandes", null, "daily", "0.6", List.of()));
         var casses = communityService.casses(null);
         java.util.Set<String> citySlugs = new java.util.TreeSet<>();

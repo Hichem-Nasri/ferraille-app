@@ -367,3 +367,11 @@ export interface AlertCounts {
   newListings: number;
   matchingRequests: number;
 }
+
+export interface VehicleEntry {
+  make: string;
+  model: string | null;
+  makeSlug: string;
+  modelSlug: string | null;
+  count: number;
+}

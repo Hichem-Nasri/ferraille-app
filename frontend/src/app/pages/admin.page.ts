@@ -1,5 +1,6 @@
 import { DatePipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { errorMessage } from '../core/api.service';
@@ -56,7 +57,7 @@ interface AdminUser {
 @Component({
   selector: 'fr-admin-page',
   standalone: true,
-  imports: [DatePipe, RouterLink],
+  imports: [DatePipe, RouterLink, FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page wide">
@@ -111,7 +112,7 @@ interface AdminUser {
       <div class="card table-wrap">
         <table>
           <thead>
-            <tr><th>Vendeur</th><th>Ville</th><th>En ligne</th><th>Vues</th><th>Contacts</th><th>Vendues</th><th>Via Ferraille</th><th>Dernière annonce</th></tr>
+            <tr><th>Vendeur</th><th>Ville</th><th>En ligne</th><th>Vues</th><th>Contacts</th><th>Vendues</th><th>Via Ferraille</th><th>Dernière annonce</th><th></th></tr>
           </thead>
           <tbody>
             @for (s of sellers(); track s.id) {
@@ -127,14 +128,32 @@ interface AdminUser {
                 <td>{{ s.soldListings }}</td>
                 <td>{{ s.soldViaFerraille }}</td>
                 <td>{{ s.lastListingAt ? (s.lastListingAt | date: 'd MMM HH:mm') : '—' }}</td>
+                <td>@if (!s.demo) { <a routerLink="/vendre/lot" [queryParams]="{ pour: s.id, nom: s.name }">Publier pour lui</a> }</td>
               </tr>
             } @empty {
-              <tr><td colspan="8" class="muted">Aucun vendeur pour le moment.</td></tr>
+              <tr><td colspan="9" class="muted">Aucun vendeur pour le moment.</td></tr>
             }
           </tbody>
         </table>
       </div>
       <p class="muted small">« Contacts » = clics sur WhatsApp, Messenger ou Appeler. « Via Ferraille » = le vendeur a indiqué que la vente s'est faite grâce au site.</p>
+
+      <details class="card card-pad managed">
+        <summary class="strong">Ajouter une casse qui m'envoie ses pièces (publication assistée)</summary>
+        <form class="stack mform" (ngSubmit)="createManaged()">
+          <p class="muted small">Pour une casse qui t'envoie ses photos sur WhatsApp et t'a <strong>donné son accord</strong> pour publier à sa place. Les acheteurs la contacteront directement sur son numéro.</p>
+          <div class="mgrid">
+            <input class="input" name="mName" [(ngModel)]="mName" placeholder="Nom du responsable" required maxlength="120">
+            <input class="input" name="mShop" [(ngModel)]="mShop" placeholder="Nom de la casse" maxlength="120">
+            <input class="input" name="mWa" [(ngModel)]="mWa" placeholder="WhatsApp (ex. 98123456)" maxlength="30">
+            <input class="input" name="mCity" [(ngModel)]="mCity" placeholder="Ville" maxlength="80">
+            <input class="input wide" name="mAddr" [(ngModel)]="mAddr" placeholder="Adresse (facultatif)" maxlength="200">
+          </div>
+          <label class="row consent"><input type="checkbox" name="mConsent" [(ngModel)]="mConsent"> Le vendeur m'a donné son accord pour publier ses pièces sur Ferraille.</label>
+          @if (mMessage()) { <span class="small">{{ mMessage() }}</span> }
+          <button type="submit" class="btn btn-primary" [disabled]="!mName.trim() || !mWa.trim() || !mConsent || mBusy()">Créer le vendeur puis publier ses pièces</button>
+        </form>
+      </details>
 
       <h2 class="section-title">Inscrits</h2>
       <div class="stats">
@@ -171,6 +190,11 @@ interface AdminUser {
     </div>
   `,
   styles: `
+    .managed summary { cursor: pointer; }
+    .mform { gap: 10px; margin-top: 12px; }
+    .mgrid { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+    .mgrid .wide { grid-column: 1 / -1; }
+    .consent { gap: 8px; font-size: 14px; align-items: flex-start; }
     tr.demo { opacity: 0.5; }
     .pill { display: inline-block; margin-inline-start: 4px; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 6px; background: var(--line-soft); color: var(--ink-2); }
     .pill.ok { background: var(--green-soft); color: var(--green); }
@@ -201,6 +225,41 @@ interface AdminUser {
 })
 export class AdminPage implements OnInit {
   private readonly http = inject(HttpClient);
+  private readonly router = inject(Router);
+
+  mName = '';
+  mShop = '';
+  mWa = '';
+  mCity = '';
+  mAddr = '';
+  mConsent = false;
+  readonly mBusy = signal(false);
+  readonly mMessage = signal<string | null>(null);
+
+  createManaged(): void {
+    this.mBusy.set(true);
+    this.mMessage.set(null);
+    this.http
+      .post<{ id: number; name: string }>('/api/admin/sellers', {
+        fullName: this.mName.trim(),
+        shopName: this.mShop.trim() || undefined,
+        sellerType: this.mShop.trim() ? 'PRO' : 'PARTICULIER',
+        whatsapp: this.mWa.trim(),
+        city: this.mCity.trim() || undefined,
+        address: this.mAddr.trim() || undefined,
+        consent: this.mConsent,
+      })
+      .subscribe({
+        next: (r) => {
+          this.mBusy.set(false);
+          this.router.navigate(['/vendre/lot'], { queryParams: { pour: r.id, nom: r.name } });
+        },
+        error: (e) => {
+          this.mBusy.set(false);
+          this.mMessage.set(errorMessage(e));
+        },
+      });
+  }
 
   toggleVerified(u: AdminUser): void {
     this.http.post<{ verified: boolean }>(`/api/admin/users/${u.id}/verified`, {}).subscribe({

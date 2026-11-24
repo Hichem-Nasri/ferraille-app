@@ -30,10 +30,57 @@ public class AdminController {
     private final tn.ferraille.user.UserRepository userRepository;
     private final tn.ferraille.listing.ListingRepository listingRepository;
     private final org.springframework.jdbc.core.JdbcTemplate jdbc;
+    private final tn.ferraille.listing.ListingService listingService;
 
     public record AdminSeller(Long id, String name, String sellerType, boolean verified, String city, boolean demo,
                               long activeListings, long soldListings, long soldViaFerraille, long views,
                               long contactClicks, java.time.Instant lastListingAt) {
+    }
+
+    public record ManagedSellerRequest(@jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max = 120) String fullName,
+                                       @jakarta.validation.constraints.Size(max = 120) String shopName,
+                                       @jakarta.validation.constraints.NotNull tn.ferraille.user.SellerType sellerType,
+                                       @jakarta.validation.constraints.Size(max = 30) String whatsapp,
+                                       @jakarta.validation.constraints.Size(max = 30) String phone,
+                                       @jakarta.validation.constraints.Size(max = 80) String city,
+                                       @jakarta.validation.constraints.Size(max = 200) String address,
+                                       boolean consent) {
+    }
+
+    @PostMapping("/sellers")
+    @org.springframework.transaction.annotation.Transactional
+    public java.util.Map<String, Object> createManagedSeller(@jakarta.validation.Valid @org.springframework.web.bind.annotation.RequestBody ManagedSellerRequest r) {
+        if (!r.consent()) {
+            throw tn.ferraille.common.ApiException.badRequest("Le vendeur doit avoir donné son accord pour qu'on publie à sa place.");
+        }
+        if (isBlank(r.whatsapp()) && isBlank(r.phone())) {
+            throw tn.ferraille.common.ApiException.badRequest("Un numéro WhatsApp ou de téléphone est obligatoire.");
+        }
+        if (r.sellerType() == tn.ferraille.user.SellerType.PRO && isBlank(r.shopName())) {
+            throw tn.ferraille.common.ApiException.badRequest("Le nom de la casse est obligatoire pour un pro.");
+        }
+        var u = new tn.ferraille.user.User();
+        u.setFullName(r.fullName().trim());
+        u.setShopName(isBlank(r.shopName()) ? null : r.shopName().trim());
+        u.setSellerType(r.sellerType());
+        u.setWhatsapp(isBlank(r.whatsapp()) ? null : r.whatsapp().replaceAll("[^0-9+]", ""));
+        u.setPhone(isBlank(r.phone()) ? null : r.phone().replaceAll("[^0-9+]", ""));
+        u.setCity(isBlank(r.city()) ? null : r.city().trim());
+        u.setAddress(isBlank(r.address()) ? null : r.address().trim());
+        userRepository.save(u);
+        return java.util.Map.of("id", u.getId(), "name", u.getDisplayName());
+    }
+
+    @PostMapping("/users/{id}/listings/bulk")
+    @org.springframework.web.bind.annotation.ResponseStatus(org.springframework.http.HttpStatus.CREATED)
+    public java.util.List<tn.ferraille.listing.ListingDtos.ListingDetail> publishFor(
+            @org.springframework.web.bind.annotation.PathVariable Long id,
+            @jakarta.validation.Valid @org.springframework.web.bind.annotation.RequestBody tn.ferraille.listing.ListingController.BulkRequest request) {
+        return listingService.createBulk(id, request.listings());
+    }
+
+    private static boolean isBlank(String s) {
+        return s == null || s.isBlank();
     }
 
     @org.springframework.web.bind.annotation.GetMapping("/sellers")

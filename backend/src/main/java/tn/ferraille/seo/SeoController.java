@@ -69,6 +69,11 @@ public class SeoController {
         return html(page.get());
     }
 
+    @GetMapping({"/seo/pieces-auto/{make}", "/seo/pieces-auto/{make}/{model}"})
+    public ResponseEntity<String> vehicle(@PathVariable String make, @PathVariable Optional<String> model) {
+        return seoService.vehicle(make, model.orElse(null)).map(this::html).orElseGet(() -> html(seoService.notFound()));
+    }
+
     @GetMapping("/seo/demandes")
     public ResponseEntity<String> requests() {
         return html(seoService.requests());

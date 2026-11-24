@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ApiService, errorMessage } from '../core/api.service';
@@ -48,11 +48,14 @@ function emptyRow(previous?: Row): Row {
     <div class="page wide">
       <div class="stack">
         <h1 class="h1">{{ 'Publication express' | t }}</h1>
+        @if (forId()) {
+          <div class="card card-pad for-banner">Publication <strong>pour {{ forName() || ('le vendeur n°' + forId()) }}</strong> (mode admin). Les annonces apparaîtront sur son compte, avec son numéro.</div>
+        }
         <span class="muted">Jusqu'à 10 pièces d'un coup : une photo, le nom de la pièce, le véhicule. Le titre se remplit tout seul.
           <a routerLink="/vendre">Annonce détaillée</a></span>
       </div>
 
-      @if (!auth.user()?.hasContact) {
+      @if (!forId() && !auth.user()?.hasContact) {
         <div class="card card-pad warn">Ajoute d'abord ton numéro WhatsApp dans <a routerLink="/profil" [queryParams]="{ retour: '/vendre/lot' }">ton profil</a> pour que les acheteurs puissent te joindre.</div>
       }
 
@@ -106,7 +109,7 @@ function emptyRow(previous?: Row): Row {
         @if (rows().length < 10) {
           <button type="button" class="btn btn-ghost grow" (click)="add()"><fr-icon name="plus" [size]="18" />{{ 'Ajouter une ligne' | t }}</button>
         }
-        <button type="button" class="btn btn-primary grow" (click)="publish()" [disabled]="saving() || !auth.user()?.hasContact || readyCount() === 0">
+        <button type="button" class="btn btn-primary grow" (click)="publish()" [disabled]="saving() || (!forId() && !auth.user()?.hasContact) || readyCount() === 0">
           {{ 'Tout publier' | t }} ({{ readyCount() }})
         </button>
       </div>
@@ -117,6 +120,7 @@ function emptyRow(previous?: Row): Row {
   `,
   styles: `
     .h1 { font-size: 26px; margin: 0; }
+    .for-banner { background: var(--lime-soft, #eef9d8); border-color: #d7eea5; font-size: 14px; }
     .warn { background: var(--warn-soft); border-color: #f0dc9a; color: var(--warn); }
     .common { align-items: end; }
     .grid-3 { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
@@ -147,6 +151,20 @@ export class SellBatchPage implements OnInit {
   readonly rows = signal<Row[]>([emptyRow(), emptyRow(), emptyRow()]);
   readonly saving = signal(false);
   readonly error = signal<string | null>(null);
+
+  readonly forId = signal<number | null>(null);
+  readonly forName = signal<string | null>(null);
+
+  @Input()
+  set pour(value: string | undefined) {
+    const id = Number(value);
+    this.forId.set(value && Number.isFinite(id) && id > 0 && this.auth.user()?.role === 'ADMIN' ? id : null);
+  }
+
+  @Input()
+  set nom(value: string | undefined) {
+    this.forName.set(value ?? null);
+  }
 
   city = 'Tunis';
   condition: PartCondition = 'BON';
@@ -215,8 +233,10 @@ export class SellBatchPage implements OnInit {
     }));
     this.saving.set(true);
     this.error.set(null);
-    this.api.createListingsBulk(requests).subscribe({
-      next: () => this.router.navigate(['/mes-annonces']),
+    const forId = this.forId();
+    const call = forId ? this.api.publishFor(forId, requests) : this.api.createListingsBulk(requests);
+    call.subscribe({
+      next: () => (forId ? this.router.navigate(['/casse', forId]) : this.router.navigate(['/mes-annonces'])),
       error: (e) => {
         this.saving.set(false);
         this.error.set(errorMessage(e));

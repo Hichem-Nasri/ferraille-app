@@ -10,6 +10,8 @@ export const routes: Routes = [
   { path: 'inscription', data: { title: "Créer un compte", noindex: true }, loadComponent: () => import('./pages/register.page').then((m) => m.RegisterPage) },
   { path: 'vendre', data: { title: "Vendre une pièce", noindex: true }, canActivate: [authGuard], loadComponent: () => import('./pages/sell.page').then((m) => m.SellPage) },
   { path: 'vendre/lot', data: { title: 'Publication express', noindex: true }, canActivate: [authGuard], loadComponent: () => import('./pages/sell-batch.page').then((m) => m.SellBatchPage) },
+  { path: 'pieces-auto/:marque/:modele', loadComponent: () => import('./pages/vehicle.page').then((m) => m.VehiclePage) },
+  { path: 'pieces-auto/:marque', loadComponent: () => import('./pages/vehicle.page').then((m) => m.VehiclePage) },
   { path: 'demandes', loadComponent: () => import('./pages/requests.page').then((m) => m.RequestsPage) },
   { path: 'casses', loadComponent: () => import('./pages/casses.page').then((m) => m.CassesPage) },
   { path: 'casses/:ville', loadComponent: () => import('./pages/casses.page').then((m) => m.CassesPage) },

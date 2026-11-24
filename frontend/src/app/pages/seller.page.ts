@@ -12,11 +12,12 @@ import { slugify } from '../core/slug';
 import { BottomNavComponent } from '../shared/bottom-nav.component';
 import { IconComponent } from '../shared/icon.component';
 import { ListingCardComponent } from '../shared/listing-card.component';
+import { ShareComponent } from '../shared/share.component';
 
 @Component({
   selector: 'fr-seller-page',
   standalone: true,
-  imports: [FormsModule, RouterLink, DatePipe, TranslatePipe, IconComponent, ListingCardComponent, BottomNavComponent],
+  imports: [FormsModule, RouterLink, DatePipe, TranslatePipe, IconComponent, ListingCardComponent, BottomNavComponent, ShareComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page wide">
@@ -55,7 +56,9 @@ import { ListingCardComponent } from '../shared/listing-card.component';
               <a class="btn btn-lime icon-only" [href]="maps(s)" target="_blank" rel="noopener" [attr.aria-label]="'Itinéraire' | t"><fr-icon name="pin" [size]="20" /></a>
             }
           </div>
+          <fr-share [url]="path()" [text]="s.displayName + ' — pièces auto d’occasion sur Ferraille 🔧'" src="vitrine" />
           @if (isAdmin()) {
+            <a class="btn btn-lime" routerLink="/vendre/lot" [queryParams]="{ pour: s.id, nom: s.displayName }">Publier des pièces pour ce vendeur</a>
             <button type="button" class="btn btn-ghost admin" (click)="toggleVerified(s)">{{ s.verified ? 'Retirer le badge vérifié' : 'Marquer comme casse vérifiée' }}</button>
           }
         </section>
