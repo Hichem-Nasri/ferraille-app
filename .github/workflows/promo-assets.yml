@@ -7,6 +7,9 @@ on:
         description: Nombre d'annonces récentes
         default: "12"
 
+permissions:
+  contents: write
+
 jobs:
   assets:
     runs-on: ubuntu-latest
@@ -28,8 +31,12 @@ jobs:
             done
             jq -r '"\(.id) | seller \(.sellerId) | \(.createdAt) | \(.title)"' out/$id.json
           done
-      - uses: actions/upload-artifact@v4
-        with:
-          name: promo-assets
-          path: out
-          retention-days: 3
+      - name: Publier sur la branche promo-assets
+        run: |
+          cd out
+          git init -q -b promo-assets
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Assets promo"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" promo-assets
