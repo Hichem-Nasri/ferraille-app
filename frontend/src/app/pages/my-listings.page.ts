@@ -36,11 +36,22 @@ import { PartIconComponent } from '../shared/part-icon.component';
                 <span class="muted small">{{ l.price | dinar }} · {{ statusLabel(l.status) }} · {{ l.views }} vues · {{ l.contactClicks }} contact{{ l.contactClicks > 1 ? 's' : '' }}</span>
               </a>
               @if (l.status === 'ACTIVE') {
+                <button type="button" class="btn btn-ghost sold-btn" (click)="asking.set(l.id)">Vendu</button>
                 <button type="button" class="icon-btn" (click)="archive(l)" [attr.aria-label]="'Retirer ' + l.title">
                   <fr-icon name="close" [size]="18" />
                 </button>
               }
             </div>
+            @if (asking() === l.id) {
+              <div class="ask">
+                <span class="small strong">Bravo ! La vente s'est faite grâce à Ferraille ?</span>
+                <div class="row ask-actions">
+                  <button type="button" class="btn btn-primary" (click)="sold(l, true)">Oui, un client du site</button>
+                  <button type="button" class="btn btn-ghost" (click)="sold(l, false)">Non, ailleurs</button>
+                  <button type="button" class="btn btn-ghost" (click)="asking.set(null)">Annuler</button>
+                </div>
+              </div>
+            }
           }
         </div>
       }
@@ -48,6 +59,11 @@ import { PartIconComponent } from '../shared/part-icon.component';
     <fr-bottom-nav />
   `,
   styles: `
+    .sold-btn { height: 36px; padding: 0 12px; font-size: 13px; flex-shrink: 0; }
+    .ask { padding: 12px 14px; background: var(--green-soft); display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid var(--line-soft); }
+    .ask-actions { gap: 8px; flex-wrap: wrap; }
+    .ask-actions .btn { height: 40px; font-size: 13px; }
+    .strong { font-weight: 700; }
     .h1 { font-size: 26px; }
     .add { height: 44px; font-size: 14px; }
     .list { overflow: hidden; }
@@ -85,6 +101,18 @@ export class MyListingsPage implements OnInit {
 
   statusLabel(status: ListingStatus): string {
     return { ACTIVE: 'En ligne', RESERVED: 'Commande en cours', SOLD: 'Vendue', ARCHIVED: 'Retirée' }[status];
+  }
+
+  readonly asking = signal<number | null>(null);
+
+  sold(l: ListingSummary, viaFerraille: boolean): void {
+    this.api.markSold(l.id, viaFerraille).subscribe({
+      next: () => {
+        this.asking.set(null);
+        this.listings.set(this.listings().map((x) => (x.id === l.id ? { ...x, status: 'SOLD' as const } : x)));
+      },
+      error: (e) => this.error.set(errorMessage(e)),
+    });
   }
 
   archive(l: ListingSummary): void {

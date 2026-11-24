@@ -78,6 +78,12 @@ public class Listing {
     @Column(nullable = false)
     private boolean featured;
 
+    @Column(name = "sold_at")
+    private java.time.Instant soldAt;
+
+    @Column(name = "sold_via_ferraille")
+    private Boolean soldViaFerraille;
+
     @ElementCollection
     @CollectionTable(name = "listing_photos", joinColumns = @JoinColumn(name = "listing_id"))
     @OrderColumn(name = "position")

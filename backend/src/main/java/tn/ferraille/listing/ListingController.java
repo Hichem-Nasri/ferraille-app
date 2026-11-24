@@ -78,6 +78,15 @@ public class ListingController {
                               java.util.List<@Valid ListingRequest> listings) {
     }
 
+    public record SoldRequest(Boolean viaFerraille) {
+    }
+
+    @PostMapping("/{id:\\d+}/sold")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void sold(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable Long id, @RequestBody SoldRequest request) {
+        listingService.markSold(user.id(), id, request.viaFerraille());
+    }
+
     @PostMapping("/bulk")
     @ResponseStatus(HttpStatus.CREATED)
     public java.util.List<ListingDetail> bulk(@AuthenticationPrincipal AuthenticatedUser user, @Valid @RequestBody BulkRequest request) {

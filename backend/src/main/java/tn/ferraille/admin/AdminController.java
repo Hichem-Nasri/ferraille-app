@@ -29,6 +29,34 @@ public class AdminController {
     private final WalletService walletService;
     private final tn.ferraille.user.UserRepository userRepository;
     private final tn.ferraille.listing.ListingRepository listingRepository;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
+
+    public record AdminSeller(Long id, String name, String sellerType, boolean verified, String city, boolean demo,
+                              long activeListings, long soldListings, long soldViaFerraille, long views,
+                              long contactClicks, java.time.Instant lastListingAt) {
+    }
+
+    @org.springframework.web.bind.annotation.GetMapping("/sellers")
+    public java.util.List<AdminSeller> sellers() {
+        return jdbc.query("""
+                select u.id,
+                       case when u.seller_type = 'PRO' and coalesce(u.shop_name, '') <> '' then u.shop_name else u.full_name end as name,
+                       u.seller_type, u.verified, u.city,
+                       coalesce(u.email, '') like '%@demo.ferraille.tn' as demo,
+                       count(l.id) filter (where l.status = 'ACTIVE') as active,
+                       count(l.id) filter (where l.status = 'SOLD') as sold,
+                       count(l.id) filter (where l.sold_via_ferraille) as via,
+                       coalesce(sum(l.views), 0) as views,
+                       coalesce(sum(l.contact_clicks), 0) as contacts,
+                       max(l.created_at) as last_listing
+                from users u join listings l on l.seller_id = u.id
+                group by u.id
+                order by demo, contacts desc, active desc
+                """, (rs, i) -> new AdminSeller(rs.getLong("id"), rs.getString("name"), rs.getString("seller_type"),
+                rs.getBoolean("verified"), rs.getString("city"), rs.getBoolean("demo"), rs.getLong("active"),
+                rs.getLong("sold"), rs.getLong("via"), rs.getLong("views"), rs.getLong("contacts"),
+                rs.getTimestamp("last_listing") == null ? null : rs.getTimestamp("last_listing").toInstant()));
+    }
 
     public record AdminUser(Long id, String fullName, String email, String phone, String whatsapp, String facebookUrl,
                             String city, String sellerType, String shopName, String role, boolean facebook,

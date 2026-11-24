@@ -21,6 +21,21 @@ interface VisitSummary {
   devices: { device: string; visitors: number }[];
 }
 
+interface AdminSeller {
+  id: number;
+  name: string;
+  sellerType: string;
+  verified: boolean;
+  city?: string;
+  demo: boolean;
+  activeListings: number;
+  soldListings: number;
+  soldViaFerraille: number;
+  views: number;
+  contactClicks: number;
+  lastListingAt?: string;
+}
+
 interface AdminUser {
   id: number;
   fullName: string;
@@ -85,8 +100,43 @@ interface AdminUser {
             @for (d of v.devices; track d.device) { <div class="line"><span>{{ d.device }}</span><strong>{{ d.visitors }}</strong></div> }
           </div>
         </div>
-        <h2 class="section-title">Inscrits</h2>
+        <h2 class="section-title">Vendeurs</h2>
       }
+      <div class="stats">
+        <div class="card stat"><span class="value">{{ sellerTotals().contacts }}</span><span class="muted small">Clics contact</span></div>
+        <div class="card stat"><span class="value">{{ sellerTotals().views }}</span><span class="muted small">Vues annonces</span></div>
+        <div class="card stat"><span class="value">{{ sellerTotals().sold }}</span><span class="muted small">Pièces vendues</span></div>
+        <div class="card stat"><span class="value">{{ sellerTotals().via }}</span><span class="muted small">Vendues grâce à Ferraille</span></div>
+      </div>
+      <div class="card table-wrap">
+        <table>
+          <thead>
+            <tr><th>Vendeur</th><th>Ville</th><th>En ligne</th><th>Vues</th><th>Contacts</th><th>Vendues</th><th>Via Ferraille</th><th>Dernière annonce</th></tr>
+          </thead>
+          <tbody>
+            @for (s of sellers(); track s.id) {
+              <tr [class.demo]="s.demo">
+                <td><a [routerLink]="['/casse', s.id]">{{ s.name }}</a>
+                  @if (s.sellerType === 'PRO') { <span class="pill">PRO</span> }
+                  @if (s.verified) { <span class="pill ok">✓</span> }
+                  @if (s.demo) { <span class="pill">démo</span> }</td>
+                <td>{{ s.city || '—' }}</td>
+                <td>{{ s.activeListings }}</td>
+                <td>{{ s.views }}</td>
+                <td class="strong">{{ s.contactClicks }}</td>
+                <td>{{ s.soldListings }}</td>
+                <td>{{ s.soldViaFerraille }}</td>
+                <td>{{ s.lastListingAt ? (s.lastListingAt | date: 'd MMM HH:mm') : '—' }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="8" class="muted">Aucun vendeur pour le moment.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="muted small">« Contacts » = clics sur WhatsApp, Messenger ou Appeler. « Via Ferraille » = le vendeur a indiqué que la vente s'est faite grâce au site.</p>
+
+      <h2 class="section-title">Inscrits</h2>
       <div class="stats">
         <div class="card stat"><span class="value">{{ realUsers().length }}</span><span class="muted small">Inscrits réels</span></div>
         <div class="card stat"><span class="value">{{ todayCount() }}</span><span class="muted small">Aujourd'hui</span></div>
@@ -121,6 +171,10 @@ interface AdminUser {
     </div>
   `,
   styles: `
+    tr.demo { opacity: 0.5; }
+    .pill { display: inline-block; margin-inline-start: 4px; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 6px; background: var(--line-soft); color: var(--ink-2); }
+    .pill.ok { background: var(--green-soft); color: var(--green); }
+    .strong { font-weight: 700; }
     .vbtn { border: 1.5px solid var(--line); background: var(--white); border-radius: 8px; padding: 4px 8px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--ink-2); }
     .vbtn.on { background: var(--green-soft); border-color: var(--green); color: var(--green); }
     .h1 { font-size: 28px; }
@@ -156,6 +210,15 @@ export class AdminPage implements OnInit {
   }
 
   readonly users = signal<AdminUser[]>([]);
+  readonly sellers = signal<AdminSeller[]>([]);
+  readonly sellerTotals = computed(() =>
+    this.sellers()
+      .filter((s) => !s.demo)
+      .reduce(
+        (t, s) => ({ contacts: t.contacts + s.contactClicks, views: t.views + s.views, sold: t.sold + s.soldListings, via: t.via + s.soldViaFerraille }),
+        { contacts: 0, views: 0, sold: 0, via: 0 },
+      ),
+  );
   readonly visits = signal<VisitSummary | null>(null);
   readonly error = signal<string | null>(null);
 
@@ -176,6 +239,7 @@ export class AdminPage implements OnInit {
 
   ngOnInit(): void {
     this.http.get<VisitSummary>('/api/admin/visits').subscribe({ next: (v) => this.visits.set(v), error: () => undefined });
+    this.http.get<AdminSeller[]>('/api/admin/sellers').subscribe({ next: (s) => this.sellers.set(s), error: () => undefined });
     this.http.get<AdminUser[]>('/api/admin/users').subscribe({
       next: (u) => this.users.set(u),
       error: (e) =>

@@ -92,6 +92,18 @@ public class ListingService {
     }
 
     @Transactional
+    public void markSold(Long sellerId, Long id, Boolean viaFerraille) {
+        Listing listing = requireOwned(sellerId, id);
+        if (listing.getStatus() == ListingStatus.ARCHIVED) {
+            throw ApiException.conflict("Cette annonce a été retirée");
+        }
+        listing.setStatus(ListingStatus.SOLD);
+        listing.setFeatured(false);
+        listing.setSoldAt(java.time.Instant.now());
+        listing.setSoldViaFerraille(viaFerraille);
+    }
+
+    @Transactional
     public void recordContact(Long id) {
         if (listingRepository.existsById(id)) {
             listingRepository.incrementContactClicks(id);

@@ -69,6 +69,10 @@ export class ApiService {
     return this.http.post<ListingDetail>('/api/listings', request);
   }
 
+  markSold(id: number, viaFerraille: boolean | null): Observable<void> {
+    return this.http.post<void>(`/api/listings/${id}/sold`, { viaFerraille });
+  }
+
   archiveListing(id: number): Observable<void> {
     return this.http.delete<void>(`/api/listings/${id}`);
   }
