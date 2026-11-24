@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
 public class SeoService {
 
     public static final String SITE_NAME = "Ferraille";
-    private static final Duration TEMPLATE_TTL = Duration.ofMinutes(5);
+    private static final Duration TEMPLATE_TTL = Duration.ofSeconds(30);
     private static final Pattern TITLE = Pattern.compile("(?is)<title>.*?</title>");
     private static final Pattern SEO_META = Pattern.compile(
             "(?is)<meta\\s+(?:name|property)=\"(?:description|robots|og:[^\"]*|twitter:[^\"]*)\"[^>]*>\\s*");

@@ -98,7 +98,7 @@ public class SeoController {
         return ResponseEntity.status(page.status())
                 .contentType(HTML)
                 .header(HttpHeaders.VARY, "Accept-Encoding")
-                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(5)).cachePublic())
+                .cacheControl(CacheControl.noCache())
                 .body(seoService.render(page));
     }
 }
