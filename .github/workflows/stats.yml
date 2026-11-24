@@ -29,6 +29,14 @@ jobs:
               union all select 'annonces en ligne', count(*) from listings where status = 'ACTIVE'
               union all select 'annonces en ligne (vendeurs reels)', count(*) from listings l join users u on u.id = l.seller_id where l.status = 'ACTIVE' and coalesce(u.email,'') not like '%@demo.ferraille.tn'
               union all select 'vues totales', coalesce(sum(views),0) from listings
-              union all select 'clics contact totaux', coalesce(sum(contact_clicks),0) from listings;"
+              union all select 'clics contact totaux', coalesce(sum(contact_clicks),0) from listings
+              union all select 'demandes de pieces (total)', count(*) from part_requests
+              union all select 'demandes ouvertes', count(*) from part_requests where status = 'OPEN'
+              union all select 'personnes ayant fait une demande', count(distinct user_id) from part_requests
+              union all select 'demandes aujourd''hui', count(*) from part_requests where created_at >= date_trunc('day', now())
+              union all select 'alertes creees', count(*) from saved_searches
+              union all select 'avis laisses', count(*) from reviews;"
+            echo "--- Demandes par marque ---"
+            docker compose exec -T db psql -U ferraille -d ferraille -A -F ' | ' -c "select make, count(*) from part_requests group by 1 order by 2 desc limit 15;"
             echo "--- Inscriptions par jour ---"
             docker compose exec -T db psql -U ferraille -d ferraille -A -F ' | ' -c "select to_char(created_at at time zone 'Africa/Tunis','YYYY-MM-DD') jour, count(*) from users where coalesce(email,'') not like '%@demo.ferraille.tn' and role <> 'ADMIN' group by 1 order by 1 desc limit 14;"
