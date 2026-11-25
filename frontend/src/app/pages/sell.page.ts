@@ -176,8 +176,50 @@ import { PartIconComponent } from '../shared/part-icon.component';
         </button>
       </div>
     </form>
+
+    @if (accountOpen()) {
+      <div class="overlay" role="dialog" aria-modal="true" aria-labelledby="acc-title">
+        <form class="sheet stack" (ngSubmit)="accountSubmit()" #af="ngForm">
+          <span id="acc-title" class="sheet-title">{{ accountMode() === 'register' ? 'Dernière étape : ton compte gratuit' : 'Connexion' }}</span>
+          <span class="muted small">Ton annonce est prête. {{ accountMode() === 'register' ? 'Crée ton compte en 30 secondes pour la publier et la gérer ensuite.' : 'Connecte-toi pour la publier.' }}</span>
+          @if (accountMode() === 'register') {
+            <div class="field">
+              <label for="acc-name">Ton nom (ou celui de ta casse)</label>
+              <input id="acc-name" class="input" name="accName" [(ngModel)]="accName" required maxlength="120" autocomplete="name">
+            </div>
+          }
+          <div class="field">
+            <label for="acc-email">E-mail</label>
+            <input id="acc-email" class="input" type="email" name="accEmail" [(ngModel)]="accEmail" required email autocomplete="email">
+          </div>
+          <div class="field">
+            <label for="acc-pass">Mot de passe{{ accountMode() === 'register' ? ' (8 caractères min.)' : '' }}</label>
+            <input id="acc-pass" class="input" type="password" name="accPassword" [(ngModel)]="accPassword" required minlength="8"
+                   [attr.autocomplete]="accountMode() === 'register' ? 'new-password' : 'current-password'">
+          </div>
+          @if (accountMode() === 'register') {
+            <label class="row check small"><input type="checkbox" name="accPro" [(ngModel)]="accPro"> Je suis une casse / un professionnel</label>
+          }
+          @if (accountError()) { <div class="error">{{ accountError() }}</div> }
+          <button type="submit" class="btn btn-lime" [disabled]="af.invalid || saving()">
+            {{ saving() ? 'Publication…' : (accountMode() === 'register' ? 'Créer mon compte et publier' : 'Me connecter et publier') }}
+          </button>
+          <button type="button" class="link" (click)="accountMode.set(accountMode() === 'register' ? 'login' : 'register')">
+            {{ accountMode() === 'register' ? 'J’ai déjà un compte' : 'Créer un compte' }}
+          </button>
+          <button type="button" class="btn btn-ghost" (click)="accountOpen.set(false)" [disabled]="saving()">Revenir à l'annonce</button>
+        </form>
+      </div>
+    }
   `,
   styles: `
+    .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); z-index: 100; display: flex; align-items: flex-end; justify-content: center; }
+    @media (min-width: 700px) { .overlay { align-items: center; } }
+    .sheet { background: var(--white); width: 100%; max-width: 460px; border-radius: 24px 24px 0 0; padding: 22px 20px 28px; gap: 12px; max-height: 94vh; overflow-y: auto; }
+    @media (min-width: 700px) { .sheet { border-radius: 24px; } }
+    .sheet-title { font-family: var(--display); font-weight: 700; font-size: 21px; }
+    .link { border: 0; background: none; color: var(--green); font-weight: 600; cursor: pointer; padding: 6px; }
+    .check { gap: 8px; align-items: center; }
     .express { font-size: 13px; font-weight: 600; }
     .heading { font-size: 17px; font-weight: 600; }
     .step { width: 44px; text-align: right; font-weight: 600; }
@@ -278,6 +320,15 @@ export class SellPage implements OnInit {
     if (!files.length) {
       return;
     }
+    if (!this.auth.isLoggedIn()) {
+      const previews = files.map((file) => {
+        const url = URL.createObjectURL(file);
+        this.pendingFiles.set(url, file);
+        return url;
+      });
+      this.photos.set([...this.photos(), ...previews]);
+      return;
+    }
     this.uploading.set(true);
     this.error.set(null);
     this.api.uploadPhotos(files).subscribe({
@@ -293,6 +344,11 @@ export class SellPage implements OnInit {
   }
 
   removePhoto(index: number): void {
+    const url = this.photos()[index];
+    if (url && this.pendingFiles.has(url)) {
+      URL.revokeObjectURL(url);
+      this.pendingFiles.delete(url);
+    }
     this.photos.set(this.photos().filter((_, i) => i !== index));
   }
 
@@ -317,7 +373,72 @@ export class SellPage implements OnInit {
     return `${f.make} ${f.model}${years}`;
   }
 
+  readonly accountOpen = signal(false);
+  readonly accountMode = signal<'register' | 'login'>('register');
+  readonly accountError = signal<string | null>(null);
+  accName = '';
+  accEmail = '';
+  accPassword = '';
+  accPro = false;
+  private readonly pendingFiles = new Map<string, File>();
+
   submit(): void {
+    if (!this.category()) {
+      return;
+    }
+    if (!this.auth.isLoggedIn()) {
+      this.accountError.set(null);
+      this.accountOpen.set(true);
+      return;
+    }
+    this.publish();
+  }
+
+  accountSubmit(): void {
+    this.saving.set(true);
+    this.accountError.set(null);
+    const call =
+      this.accountMode() === 'register'
+        ? this.auth.register({
+            fullName: this.accName.trim(),
+            email: this.accEmail.trim(),
+            password: this.accPassword,
+            city: this.city,
+            sellerType: this.accPro ? 'PRO' : 'PARTICULIER',
+            shopName: this.accPro ? this.accName.trim() : undefined,
+          })
+        : this.auth.login(this.accEmail.trim(), this.accPassword);
+    call.subscribe({
+      next: () => {
+        this.accountOpen.set(false);
+        this.publish();
+      },
+      error: (e) => {
+        this.saving.set(false);
+        this.accountError.set(errorMessage(e));
+      },
+    });
+  }
+
+  private uploadPending(): Observable<string[]> {
+    const current = this.photos();
+    const files = current.map((url) => this.pendingFiles.get(url)).filter((f): f is File => !!f);
+    if (!files.length) {
+      return of(current);
+    }
+    return this.api.uploadPhotos(files).pipe(
+      switchMap((urls) => {
+        let k = 0;
+        const merged = current.map((url) => (this.pendingFiles.has(url) ? urls[k++] ?? url : url));
+        this.pendingFiles.forEach((_, url) => URL.revokeObjectURL(url));
+        this.pendingFiles.clear();
+        this.photos.set(merged);
+        return of(merged);
+      }),
+    );
+  }
+
+  private publish(): void {
     const category = this.category();
     const price = this.price && this.price >= 5 ? this.price : null;
     if (!category) {
@@ -326,7 +447,8 @@ export class SellPage implements OnInit {
     this.saving.set(true);
     this.error.set(null);
     this.ensureContact()
-      .pipe(switchMap(() => this.api.createListing({
+      .pipe(switchMap(() => this.uploadPending()))
+      .pipe(switchMap((photos) => this.api.createListing({
         title: this.title,
         description: this.description || undefined,
         category,
@@ -335,7 +457,7 @@ export class SellPage implements OnInit {
         negotiable: this.negotiable,
         city: this.city,
         oemReference: this.oemReference || undefined,
-        photos: this.photos(),
+        photos,
         fits: this.fits(),
       })))
       .subscribe({
