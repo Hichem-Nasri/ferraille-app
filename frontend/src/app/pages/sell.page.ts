@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { Observable, of, switchMap } from 'rxjs';
 import { ApiService, errorMessage } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
+import { FacebookService } from '../core/facebook.service';
 import { CATEGORIES, CITIES, CONDITIONS, MAKES } from '../core/labels';
 import { Category, PartCondition, User, VehicleFit } from '../core/models';
 import { IconComponent } from '../shared/icon.component';
@@ -182,6 +183,10 @@ import { PartIconComponent } from '../shared/part-icon.component';
         <form class="sheet stack" (ngSubmit)="accountSubmit()" #af="ngForm">
           <span id="acc-title" class="sheet-title">{{ accountMode() === 'register' ? 'Dernière étape : ton compte gratuit' : 'Connexion' }}</span>
           <span class="muted small">Ton annonce est prête. {{ accountMode() === 'register' ? 'Crée ton compte en 30 secondes pour la publier et la gérer ensuite.' : 'Connecte-toi pour la publier.' }}</span>
+          @if (fbAppId()) {
+            <button type="button" class="btn fb-btn" (click)="facebookPublish()" [disabled]="saving()">Continuer avec Facebook et publier</button>
+            <span class="muted small or">ou avec ton e-mail</span>
+          }
           @if (accountMode() === 'register') {
             <div class="field">
               <label for="acc-name">Ton nom (ou celui de ta casse)</label>
@@ -218,6 +223,9 @@ import { PartIconComponent } from '../shared/part-icon.component';
     .sheet { background: var(--white); width: 100%; max-width: 460px; border-radius: 24px 24px 0 0; padding: 22px 20px 28px; gap: 12px; max-height: 94vh; overflow-y: auto; }
     @media (min-width: 700px) { .sheet { border-radius: 24px; } }
     .sheet-title { font-family: var(--display); font-weight: 700; font-size: 21px; }
+    .fb-btn { background: #1877f2; color: #fff; height: 52px; }
+    .fb-btn:hover { background: #166fe5; color: #fff; }
+    .or { text-align: center; }
     .link { border: 0; background: none; color: var(--green); font-weight: 600; cursor: pointer; padding: 6px; }
     .check { gap: 8px; align-items: center; }
     .express { font-size: 13px; font-weight: 600; }
@@ -303,6 +311,15 @@ export class SellPage implements OnInit {
   });
 
   ngOnInit(): void {
+    this.auth.config().subscribe({
+      next: (config) => {
+        this.fbAppId.set(config.facebookAppId ?? null);
+        if (config.facebookAppId) {
+          this.facebook.load(config.facebookAppId).catch(() => undefined);
+        }
+      },
+      error: () => undefined,
+    });
     const userCity = this.auth.user()?.city;
     if (userCity && CITIES.includes(userCity)) {
       this.city = userCity;
@@ -373,6 +390,8 @@ export class SellPage implements OnInit {
     return `${f.make} ${f.model}${years}`;
   }
 
+  private readonly facebook = inject(FacebookService);
+  readonly fbAppId = signal<string | null>(null);
   readonly accountOpen = signal(false);
   readonly accountMode = signal<'register' | 'login'>('register');
   readonly accountError = signal<string | null>(null);
@@ -392,6 +411,31 @@ export class SellPage implements OnInit {
       return;
     }
     this.publish();
+  }
+
+  async facebookPublish(): Promise<void> {
+    const appId = this.fbAppId();
+    if (!appId) {
+      return;
+    }
+    this.saving.set(true);
+    this.accountError.set(null);
+    try {
+      const token = await this.facebook.login(appId);
+      this.auth.facebookLogin(token).subscribe({
+        next: () => {
+          this.accountOpen.set(false);
+          this.publish();
+        },
+        error: (e) => {
+          this.saving.set(false);
+          this.accountError.set(errorMessage(e));
+        },
+      });
+    } catch (e) {
+      this.saving.set(false);
+      this.accountError.set(e instanceof Error ? e.message : 'Connexion Facebook impossible.');
+    }
   }
 
   accountSubmit(): void {
