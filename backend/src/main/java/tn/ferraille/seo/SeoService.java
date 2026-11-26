@@ -518,7 +518,15 @@ public class SeoService {
         return """
                 User-agent: *
                 Allow: /
-                Disallow: /api/
+                Disallow: /api/admin/
+                Disallow: /api/me
+                Disallow: /api/auth/
+                Disallow: /api/alerts
+                Disallow: /api/orders
+                Disallow: /api/wallet
+                Disallow: /admin
+                Disallow: /profil
+                Disallow: /alertes
                 Disallow: /acheter/
                 Disallow: /commandes
                 Disallow: /portefeuille
