@@ -100,10 +100,6 @@ public class SeoService {
         website.put("name", SITE_NAME);
         website.put("url", publicUrl + "/");
         website.put("inLanguage", "fr-TN");
-        Map<String, Object> action = node("SearchAction");
-        action.put("target", publicUrl + "/?q={search_term_string}");
-        action.put("query-input", "required name=search_term_string");
-        website.put("potentialAction", action);
 
         Map<String, Object> organization = node("Organization");
         organization.put("name", SITE_NAME);

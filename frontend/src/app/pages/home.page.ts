@@ -370,11 +370,6 @@ export class HomePage implements OnInit {
           name: SITE_NAME,
           url: `${this.seo.origin}/`,
           inLanguage: 'fr-TN',
-          potentialAction: {
-            '@type': 'SearchAction',
-            target: `${this.seo.origin}/?q={search_term_string}`,
-            'query-input': 'required name=search_term_string',
-          },
         },
         { '@type': 'Organization', name: SITE_NAME, url: `${this.seo.origin}/`, logo: `${this.seo.origin}/icon-512.png`, areaServed: 'TN' },
       ],

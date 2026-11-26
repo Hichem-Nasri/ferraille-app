@@ -52,10 +52,15 @@ jobs:
             {
               echo ""
               echo "# ferraille:start"
-              echo "$HOSTS {"
+              echo "$DOMAIN {"
               echo "	encode gzip"
               echo "	reverse_proxy $GATEWAY:$PORT"
               echo "}"
+              if [ '${{ inputs.www }}' = 'true' ]; then
+                echo "www.$DOMAIN {"
+                echo "	redir https://$DOMAIN{uri} permanent"
+                echo "}"
+              fi
               echo "# ferraille:end"
             } >> "$CADDYFILE"
             if ! docker exec hms-caddy-1 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile; then
