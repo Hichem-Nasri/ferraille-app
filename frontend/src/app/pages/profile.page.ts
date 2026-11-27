@@ -37,6 +37,8 @@ import { IconComponent } from '../shared/icon.component';
       }
 
       <nav class="shortcuts" aria-label="Raccourcis">
+        <a class="chip" routerLink="/messages"><fr-icon name="chat" [size]="16" />Messages
+          @if (notif.messages()) { <span class="count">{{ notif.messages() }}</span> }</a>
         <a class="chip" routerLink="/mes-annonces"><fr-icon name="list" [size]="16" />Mes annonces</a>
         <a class="chip" routerLink="/alertes"><fr-icon name="bell" [size]="16" />Mes alertes
           @if (notif.counts().newListings) { <span class="count">{{ notif.counts().newListings }}</span> }</a>

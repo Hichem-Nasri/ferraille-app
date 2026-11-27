@@ -11,6 +11,7 @@ const AR: Record<string, string> = {
   'Annonces': 'إعلاناتي',
   'Profil': 'حسابي',
   'Mes annonces': 'إعلاناتي',
+  'Messages': 'الميساجات',
   'Connexion': 'دخول',
   'Admin': 'الإدارة',
   'Groupe Facebook': 'مجموعة فيسبوك',

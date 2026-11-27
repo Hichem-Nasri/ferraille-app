@@ -21,7 +21,8 @@ const CONTACT_EMAIL = 'nasri.hichem.pro@gmail.com';
         <li><strong>Connexion avec Facebook :</strong> ton identifiant Facebook propre à Ferraille, ton nom, ta photo de profil et ton adresse e-mail si tu l'autorises. Nous ne publions jamais rien sur ton compte et n'accédons ni à tes amis ni à tes messages.</li>
         <li><strong>Profil :</strong> ville, numéro WhatsApp, téléphone, lien Facebook ou Messenger, nom de la casse. Ces informations sont affichées sur tes annonces pour que les acheteurs puissent te contacter.</li>
         <li><strong>Annonces :</strong> photos, description, prix, véhicules compatibles.</li>
-        <li><strong>Statistiques :</strong> nombre de vues et de clics sur les boutons de contact de chaque annonce.</li>
+        <li><strong>Messages :</strong> quand un acheteur écrit au vendeur depuis une annonce, son nom, son téléphone et son message sont transmis au vendeur. L'équipe Ferraille peut les consulter pour transmettre le message aux vendeurs qu'elle accompagne et lutter contre les abus.</li>
+        <li><strong>Statistiques :</strong> nombre de vues et de clics sur les boutons de contact de chaque annonce, avec leur date.</li>
       </ul>
 
       <h2>Utilisation</h2>

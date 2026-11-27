@@ -26,7 +26,7 @@ import { NotifService } from '../core/notif.service';
       </a>
       <a routerLink="/profil" routerLinkActive="active" class="rel">
         <fr-icon name="user" [size]="24" />{{ 'Profil' | t }}
-        @if (notif.counts().newListings) { <span class="dot">{{ notif.counts().newListings }}</span> }
+        @if (notif.counts().newListings + notif.messages()) { <span class="dot">{{ notif.counts().newListings + notif.messages() }}</span> }
       </a>
     </nav>
   `,

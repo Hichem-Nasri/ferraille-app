@@ -18,6 +18,7 @@ export const routes: Routes = [
   { path: 'casse/:id/:slug', loadComponent: () => import('./pages/seller.page').then((m) => m.SellerPage) },
   { path: 'casse/:id', loadComponent: () => import('./pages/seller.page').then((m) => m.SellerPage) },
   { path: 'alertes', data: { title: 'Mes alertes', noindex: true }, canActivate: [authGuard], loadComponent: () => import('./pages/alerts.page').then((m) => m.AlertsPage) },
+  { path: 'messages', data: { title: 'Mes messages', noindex: true }, canActivate: [authGuard], loadComponent: () => import('./pages/messages.page').then((m) => m.MessagesPage) },
   { path: 'mes-annonces', data: { title: "Mes annonces", noindex: true }, canActivate: [authGuard], loadComponent: () => import('./pages/my-listings.page').then((m) => m.MyListingsPage) },
   { path: 'portefeuille', redirectTo: 'profil' },
   { path: 'commandes', redirectTo: 'mes-annonces' },

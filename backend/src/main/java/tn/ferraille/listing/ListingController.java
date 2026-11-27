@@ -30,6 +30,7 @@ import java.math.BigDecimal;
 public class ListingController {
 
     private final ListingService listingService;
+    private final tn.ferraille.message.MessageService messageService;
 
     @GetMapping
     public PageResponse<ListingSummary> search(
@@ -70,8 +71,9 @@ public class ListingController {
 
     @PostMapping("/{id:\\d+}/contact")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void contact(@PathVariable Long id) {
+    public void contact(@PathVariable Long id, @RequestParam(required = false) String channel) {
         listingService.recordContact(id);
+        messageService.recordEvent(id, channel);
     }
 
     public record BulkRequest(@jakarta.validation.constraints.NotEmpty @jakarta.validation.constraints.Size(max = 10)

@@ -39,7 +39,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/actuator/health/**", "/error", "/seo/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/listings", "/api/listings/{id:\\d+}", "/api/pricing/**", "/api/shipping/**", "/uploads/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/listings/{id:\\d+}/contact").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/listings/{id:\\d+}/contact", "/api/listings/{id:\\d+}/messages").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/visits").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/requests", "/api/casses", "/api/vehicles", "/api/sellers/{id:\\d+}", "/api/sellers/{id:\\d+}/reviews").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

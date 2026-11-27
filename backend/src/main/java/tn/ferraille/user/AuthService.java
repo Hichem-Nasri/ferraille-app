@@ -16,6 +16,7 @@ import tn.ferraille.user.AuthDtos.UserResponse;
 @RequiredArgsConstructor
 public class AuthService {
 
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
@@ -101,6 +102,7 @@ public class AuthService {
     public void deleteAccount(Long userId) {
         User user = require(userId);
         listingRepository.archiveAllBySeller(userId);
+        jdbc.update("delete from messages where seller_id = ? or sender_id = ?", userId, userId);
         user.setFullName("Compte supprimé");
         user.setEmail(null);
         user.setPhone(null);

@@ -12,6 +12,7 @@ export class NotifService {
   private lastFetch = 0;
 
   readonly counts = signal<AlertCounts>({ newListings: 0, matchingRequests: 0 });
+  readonly messages = signal(0);
   readonly total = computed(() => this.counts().newListings + this.counts().matchingRequests);
 
   constructor() {
@@ -21,6 +22,7 @@ export class NotifService {
     effect(() => {
       if (!this.auth.isLoggedIn()) {
         this.counts.set({ newListings: 0, matchingRequests: 0 });
+        this.messages.set(0);
         this.lastFetch = 0;
       }
     }, { allowSignalWrites: true });
@@ -36,5 +38,6 @@ export class NotifService {
     }
     this.lastFetch = now;
     this.api.alertCounts().subscribe({ next: (c) => this.counts.set(c), error: () => undefined });
+    this.api.unreadMessages().subscribe({ next: (r) => this.messages.set(r.count), error: () => undefined });
   }
 }

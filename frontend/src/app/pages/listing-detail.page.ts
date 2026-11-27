@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, Input, OnInit, computed, inject, signal } from '@angular/core';
 import { Location } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { ApiService, errorMessage } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { DinarPipe } from '../core/dinar.pipe';
@@ -18,7 +19,7 @@ import { PartIconComponent } from '../shared/part-icon.component';
 @Component({
   selector: 'fr-listing-detail-page',
   standalone: true,
-  imports: [RouterLink, DinarPipe, IconComponent, PartIconComponent, ShareComponent],
+  imports: [FormsModule, RouterLink, DinarPipe, IconComponent, PartIconComponent, ShareComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (error()) {
@@ -129,24 +130,43 @@ import { PartIconComponent } from '../shared/part-icon.component';
             <h2 class="section-title">Contacter le vendeur</h2>
             <div class="contacts">
               @if (waNumber(l)) {
-                <a class="btn contact whatsapp" [href]="whatsapp(l)" target="_blank" rel="noopener" (click)="track(l)">
+                <a class="btn contact whatsapp" [href]="whatsapp(l)" target="_blank" rel="noopener" (click)="track(l, 'whatsapp')">
                   <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.64.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.07 2.88 1.21 3.08.15.2 2.1 3.2 5.08 4.48.71.31 1.26.49 1.69.63.71.23 1.36.2 1.87.12.57-.09 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.41-.07-.12-.27-.2-.57-.35zM12.05 21.5h-.01a9.4 9.4 0 0 1-4.8-1.31l-.34-.2-3.57.93.95-3.48-.22-.36a9.38 9.38 0 0 1-1.44-5.01c0-5.19 4.23-9.42 9.43-9.42 2.52 0 4.88.98 6.66 2.76a9.36 9.36 0 0 1 2.76 6.67c0 5.2-4.23 9.42-9.42 9.42zm8.02-17.44A11.27 11.27 0 0 0 12.05.75C5.8.75.72 5.83.72 12.08c0 2 .52 3.95 1.52 5.66L.62 23.25l5.65-1.48a11.3 11.3 0 0 0 5.78 1.47h.01c6.25 0 11.33-5.08 11.33-11.33 0-3.03-1.18-5.87-3.32-8.01z"/></svg>
                   WhatsApp
                 </a>
               }
               @if (l.seller.facebookUrl) {
-                <a class="btn contact messenger" [href]="l.seller.facebookUrl" target="_blank" rel="noopener" (click)="track(l)">
+                <a class="btn contact messenger" [href]="l.seller.facebookUrl" target="_blank" rel="noopener" (click)="track(l, 'messenger')">
                   <fr-icon name="chat" [size]="20" />Messenger
                 </a>
               }
               @if (l.seller.phone) {
-                <a class="btn contact call" [href]="call(l.seller.phone)" (click)="track(l)">
+                <a class="btn contact call" [href]="call(l.seller.phone)" (click)="track(l, 'appel')">
                   <fr-icon name="phone" [size]="20" />Appeler
                 </a>
               }
+              <button type="button" class="btn contact message" (click)="openMessage()">
+                <fr-icon name="mail" [size]="20" />Message
+              </button>
             </div>
-            @if (!l.seller.whatsapp && !l.seller.facebookUrl && !l.seller.phone) {
-              <span class="muted">Ce vendeur n'a pas encore ajouté de moyen de contact.</span>
+            @if (messageOpen()) {
+              @if (messageSent()) {
+                <div class="card card-pad sent row">
+                  <fr-icon name="check-circle" class="green" />
+                  <span>Message envoyé ! Le vendeur va te recontacter sur ton téléphone.</span>
+                </div>
+              } @else {
+                <form class="card card-pad stack gap8 msg-form" id="message-form" (ngSubmit)="sendMessage(l)">
+                  <label class="small strong" for="mname">Ton nom</label>
+                  <input id="mname" class="input" name="name" [(ngModel)]="msgName" required maxlength="80" autocomplete="name">
+                  <label class="small strong" for="mphone">Ton téléphone (le vendeur te répond dessus)</label>
+                  <input id="mphone" class="input" name="phone" type="tel" [(ngModel)]="msgPhone" required maxlength="30" autocomplete="tel" placeholder="20 123 456">
+                  <label class="small strong" for="mbody">Message</label>
+                  <textarea id="mbody" class="input" name="body" [(ngModel)]="msgBody" required maxlength="1000" rows="3"></textarea>
+                  @if (messageError()) { <div class="error">{{ messageError() }}</div> }
+                  <button type="submit" class="btn btn-primary" [disabled]="messageBusy()">{{ messageBusy() ? 'Envoi…' : 'Envoyer au vendeur' }}</button>
+                </form>
+              }
             }
           </section>
         }
@@ -187,16 +207,21 @@ import { PartIconComponent } from '../shared/part-icon.component';
         <div class="bottom-bar wide">
           <a class="btn btn-ghost grow" routerLink="/mes-annonces">C'est ton annonce · {{ l.views }} vues</a>
         </div>
-      } @else if (l.status === 'ACTIVE' && (waNumber(l) || l.seller.facebookUrl)) {
+      } @else if (l.status === 'ACTIVE') {
         <div class="bottom-bar wide mobile-only">
           @if (waNumber(l)) {
-            <a class="btn contact whatsapp grow" [href]="whatsapp(l)" target="_blank" rel="noopener" (click)="track(l)">WhatsApp{{ l.price !== null ? ' · ' + (l.price | dinar) : '' }}</a>
+            <a class="btn contact whatsapp grow" [href]="whatsapp(l)" target="_blank" rel="noopener" (click)="track(l, 'whatsapp')">WhatsApp{{ l.price !== null ? ' · ' + (l.price | dinar) : '' }}</a>
           }
           @if (l.seller.facebookUrl) {
-            <a class="btn contact messenger icon-only" [href]="l.seller.facebookUrl" target="_blank" rel="noopener" (click)="track(l)" aria-label="Écrire sur Messenger"><fr-icon name="chat" [size]="20" /></a>
+            <a class="btn contact messenger icon-only" [href]="l.seller.facebookUrl" target="_blank" rel="noopener" (click)="track(l, 'messenger')" aria-label="Écrire sur Messenger"><fr-icon name="chat" [size]="20" /></a>
           }
           @if (l.seller.phone) {
-            <a class="btn btn-ghost icon-only" [href]="call(l.seller.phone)" (click)="track(l)" aria-label="Appeler le vendeur"><fr-icon name="phone" [size]="20" /></a>
+            <a class="btn btn-ghost icon-only" [href]="call(l.seller.phone)" (click)="track(l, 'appel')" aria-label="Appeler le vendeur"><fr-icon name="phone" [size]="20" /></a>
+          }
+          @if (waNumber(l)) {
+            <button type="button" class="btn btn-ghost icon-only" (click)="openMessage()" aria-label="Envoyer un message au vendeur"><fr-icon name="mail" [size]="20" /></button>
+          } @else {
+            <button type="button" class="btn btn-primary grow" (click)="openMessage()"><fr-icon name="mail" [size]="20" />Envoyer un message</button>
           }
         </div>
       }
@@ -250,6 +275,9 @@ import { PartIconComponent } from '../shared/part-icon.component';
     .messenger { background: #0084ff; }
     .messenger:hover { background: #0077e6; }
     .call { background: var(--forest); }
+    .message { background: var(--ink); border: 0; cursor: pointer; }
+    .sent { gap: 10px; align-items: center; }
+    .msg-form { gap: 6px; }
     .photo { object-fit: cover; padding: 0; }
     .icon-only { width: 54px; padding: 0; flex-shrink: 0; }
     .carrier { padding: 12px 14px; border-bottom: 1px solid var(--line-soft); }
@@ -482,8 +510,47 @@ export class ListingDetailPage implements OnInit {
     this.imageBlob = null;
   }
 
-  track(l: ListingDetail): void {
-    this.api.recordContact(l.id).subscribe({ error: () => undefined });
+  readonly messageOpen = signal(false);
+  readonly messageSent = signal(false);
+  readonly messageBusy = signal(false);
+  readonly messageError = signal<string | null>(null);
+  msgName = '';
+  msgPhone = '';
+  msgBody = 'Bonjour, cette pièce est toujours disponible ?';
+
+  openMessage(): void {
+    const u = this.auth.user();
+    if (u && !this.msgName) {
+      this.msgName = u.displayName || u.fullName || '';
+    }
+    if (u && !this.msgPhone) {
+      this.msgPhone = u.whatsapp || u.phone || '';
+    }
+    this.messageOpen.set(true);
+    setTimeout(() => document.getElementById('message-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+  }
+
+  sendMessage(l: ListingDetail): void {
+    if (!this.msgName.trim() || !this.msgPhone.trim() || !this.msgBody.trim()) {
+      this.messageError.set('Remplis ton nom, ton téléphone et ton message.');
+      return;
+    }
+    this.messageBusy.set(true);
+    this.messageError.set(null);
+    this.api.sendMessage(l.id, { name: this.msgName.trim(), phone: this.msgPhone.trim(), body: this.msgBody.trim() }).subscribe({
+      next: () => {
+        this.messageBusy.set(false);
+        this.messageSent.set(true);
+      },
+      error: (e) => {
+        this.messageBusy.set(false);
+        this.messageError.set(errorMessage(e));
+      },
+    });
+  }
+
+  track(l: ListingDetail, channel: 'whatsapp' | 'appel' | 'messenger'): void {
+    this.api.recordContact(l.id, channel).subscribe({ error: () => undefined });
     if (this.auth.isLoggedIn()) {
       setTimeout(() => this.contacted.set(true), 1500);
     }

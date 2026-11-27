@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { errorMessage } from '../core/api.service';
+import { whatsappLink } from '../core/contact';
+import { AdminContacts, AdminMessage } from '../core/models';
 
 interface VisitSummary {
   visitsToday: number;
@@ -63,6 +65,44 @@ interface AdminUser {
     <div class="page wide">
       <h1 class="h1">Administration</h1>
       @if (error()) { <div class="error">{{ error() }}</div> }
+
+      @if (contacts(); as c) {
+        <h2 class="section-title">Contacts acheteurs → vendeurs</h2>
+        <div class="stats">
+          <div class="card stat"><span class="value">{{ c.totals.today }}</span><span class="muted small">Aujourd'hui</span></div>
+          <div class="card stat"><span class="value">{{ c.totals.week }}</span><span class="muted small">7 jours</span></div>
+          <div class="card stat"><span class="value">{{ c.totals.month }}</span><span class="muted small">30 jours</span>
+            <span class="muted small">WhatsApp {{ c.totals.whatsapp }} · Appel {{ c.totals.appel }} · Messenger {{ c.totals.messenger }} · Message {{ c.totals.message }}</span></div>
+        </div>
+        <div class="grid-lists">
+          <div class="card card-pad">
+            <span class="list-title">Messages reçus sur le site</span>
+            @for (m of c.messages; track m.id) {
+              <div class="msg-line stack">
+                <div class="line">
+                  <a class="ellipsis" [routerLink]="['/piece', m.listingId, m.listingSlug]">{{ m.listingTitle }}</a>
+                  <span class="muted small">{{ m.createdAt | date: 'd MMM HH:mm' }}</span>
+                </div>
+                <span class="small"><strong>{{ m.senderName }}</strong> ({{ m.senderPhone }}) → {{ m.sellerName }}
+                  @if (m.managedSeller) { <span class="pill">géré par toi</span> }
+                  @if (!m.read) { <span class="pill ok">non lu</span> }
+                </span>
+                <span class="small msg-body">{{ m.body }}</span>
+                <a class="vbtn wa" [href]="replyBuyer(m)" target="_blank" rel="noopener">Répondre à l'acheteur sur WhatsApp</a>
+              </div>
+            } @empty { <span class="muted small">Aucun message pour l'instant.</span> }
+          </div>
+          <div class="card card-pad">
+            <span class="list-title">Derniers clics de contact</span>
+            @for (e of c.events; track $index) {
+              <div class="line">
+                <span class="ellipsis"><strong>{{ channelLabel(e.channel) }}</strong> · <a [routerLink]="['/piece', e.listingId, e.listingSlug]">{{ e.listingTitle }}</a> · {{ e.sellerName }}</span>
+                <span class="muted small">{{ e.createdAt | date: 'd MMM HH:mm' }}</span>
+              </div>
+            } @empty { <span class="muted small">Aucun contact enregistré depuis la mise en place du suivi.</span> }
+          </div>
+        </div>
+      }
 
       @if (visits(); as v) {
         <h2 class="section-title">Visites</h2>
@@ -191,6 +231,10 @@ interface AdminUser {
   `,
   styles: `
     .managed summary { cursor: pointer; }
+    .msg-line { gap: 4px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
+    .msg-line .line { border: 0; padding: 0; }
+    .msg-body { white-space: pre-wrap; color: var(--ink-2); }
+    .vbtn.wa { align-self: flex-start; text-decoration: none; }
     .mform { gap: 10px; margin-top: 12px; }
     .mgrid { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
     .mgrid .wide { grid-column: 1 / -1; }
@@ -296,7 +340,18 @@ export class AdminPage implements OnInit {
     return (value / max) * 85;
   }
 
+  readonly contacts = signal<AdminContacts | null>(null);
+
+  replyBuyer(m: AdminMessage): string {
+    return whatsappLink(m.senderPhone, `Bonjour ${m.senderName}, c'est Ferraille. Suite à votre message pour « ${m.listingTitle} » : `);
+  }
+
+  channelLabel(c: string): string {
+    return ({ whatsapp: 'WhatsApp', appel: 'Appel', messenger: 'Messenger', message: 'Message' } as Record<string, string>)[c] ?? c;
+  }
+
   ngOnInit(): void {
+    this.http.get<AdminContacts>('/api/admin/contacts').subscribe({ next: (c) => this.contacts.set(c), error: () => undefined });
     this.http.get<VisitSummary>('/api/admin/visits').subscribe({ next: (v) => this.visits.set(v), error: () => undefined });
     this.http.get<AdminSeller[]>('/api/admin/sellers').subscribe({ next: (s) => this.sellers.set(s), error: () => undefined });
     this.http.get<AdminUser[]>('/api/admin/users').subscribe({

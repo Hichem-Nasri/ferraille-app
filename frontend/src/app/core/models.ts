@@ -375,3 +375,43 @@ export interface VehicleEntry {
   modelSlug: string | null;
   count: number;
 }
+
+export interface MessageCreate {
+  name: string;
+  phone: string;
+  body: string;
+}
+
+export interface InboxMessage {
+  id: number;
+  listingId: number;
+  listingTitle: string;
+  listingSlug: string;
+  senderName: string;
+  senderPhone: string;
+  body: string;
+  createdAt: string;
+  read: boolean;
+}
+
+export interface AdminMessage extends InboxMessage {
+  sellerId: number;
+  sellerName: string;
+  managedSeller: boolean;
+}
+
+export interface AdminContactEvent {
+  listingId: number;
+  listingTitle: string;
+  listingSlug: string;
+  sellerName: string;
+  channel: 'whatsapp' | 'appel' | 'messenger' | 'message';
+  createdAt: string;
+}
+
+export interface AdminContacts {
+  totals: { today: number; week: number; month: number; whatsapp: number; appel: number; messenger: number; message: number };
+  byDay: { day: string; contacts: number }[];
+  messages: AdminMessage[];
+  events: AdminContactEvent[];
+}

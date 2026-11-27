@@ -31,6 +31,9 @@ import { PartIconComponent } from './part-icon.component';
             <a routerLink="/alertes" routerLinkActive="active">{{ 'Alertes' | t }}
               @if (notif.counts().newListings) { <span class="count">{{ notif.counts().newListings }}</span> }
             </a>
+            <a routerLink="/messages" routerLinkActive="active">{{ 'Messages' | t }}
+              @if (notif.messages()) { <span class="count">{{ notif.messages() }}</span> }
+            </a>
             <a routerLink="/mes-annonces" routerLinkActive="active">{{ 'Mes annonces' | t }}</a>
             @if (auth.user()?.role === 'ADMIN') {
               <a routerLink="/admin" routerLinkActive="active">{{ 'Admin' | t }}</a>

@@ -3,6 +3,9 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import {
   AlertCounts,
+  AdminContacts,
+  InboxMessage,
+  MessageCreate,
   CasseCard,
   PartRequest,
   PartRequestCreate,
@@ -216,8 +219,28 @@ export class ApiService {
     return this.http.post<void>(`/api/admin/listings/${listingId}/archive`, {});
   }
 
-  recordContact(id: number): Observable<void> {
-    return this.http.post<void>(`/api/listings/${id}/contact`, {});
+  recordContact(id: number, channel: 'whatsapp' | 'appel' | 'messenger' = 'whatsapp'): Observable<void> {
+    return this.http.post<void>(`/api/listings/${id}/contact`, {}, { params: { channel } });
+  }
+
+  sendMessage(listingId: number, body: MessageCreate): Observable<void> {
+    return this.http.post<void>(`/api/listings/${listingId}/messages`, body);
+  }
+
+  inbox(): Observable<InboxMessage[]> {
+    return this.http.get<InboxMessage[]>('/api/messages');
+  }
+
+  unreadMessages(): Observable<{ count: number }> {
+    return this.http.get<{ count: number }>('/api/messages/unread');
+  }
+
+  markMessageRead(id: number): Observable<void> {
+    return this.http.post<void>(`/api/messages/${id}/read`, {});
+  }
+
+  adminContacts(): Observable<AdminContacts> {
+    return this.http.get<AdminContacts>('/api/admin/contacts');
   }
 
   paymentMethods(): Observable<PaymentMethod[]> {
