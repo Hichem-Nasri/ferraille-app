@@ -66,6 +66,10 @@ interface AdminUser {
       <h1 class="h1">Administration</h1>
       @if (error()) { <div class="error">{{ error() }}</div> }
 
+      @if (contactsError()) {
+        <h2 class="section-title">Contacts acheteurs → vendeurs</h2>
+        <div class="error">Impossible de charger les contacts : {{ contactsError() }}</div>
+      }
       @if (contacts(); as c) {
         <h2 class="section-title">Contacts acheteurs → vendeurs</h2>
         <div class="stats">
@@ -341,6 +345,7 @@ export class AdminPage implements OnInit {
   }
 
   readonly contacts = signal<AdminContacts | null>(null);
+  readonly contactsError = signal<string | null>(null);
 
   replyBuyer(m: AdminMessage): string {
     return whatsappLink(m.senderPhone, `Bonjour ${m.senderName}, c'est Ferraille. Suite à votre message pour « ${m.listingTitle} » : `);
@@ -351,7 +356,10 @@ export class AdminPage implements OnInit {
   }
 
   ngOnInit(): void {
-    this.http.get<AdminContacts>('/api/admin/contacts').subscribe({ next: (c) => this.contacts.set(c), error: () => undefined });
+    this.http.get<AdminContacts>('/api/admin/contacts').subscribe({
+      next: (c) => this.contacts.set(c),
+      error: (e) => this.contactsError.set(errorMessage(e)),
+    });
     this.http.get<VisitSummary>('/api/admin/visits').subscribe({ next: (v) => this.visits.set(v), error: () => undefined });
     this.http.get<AdminSeller[]>('/api/admin/sellers').subscribe({ next: (s) => this.sellers.set(s), error: () => undefined });
     this.http.get<AdminUser[]>('/api/admin/users').subscribe({

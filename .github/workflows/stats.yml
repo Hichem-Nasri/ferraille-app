@@ -35,7 +35,13 @@ jobs:
               union all select 'personnes ayant fait une demande', count(distinct user_id) from part_requests
               union all select 'demandes aujourd''hui', count(*) from part_requests where created_at >= date_trunc('day', now())
               union all select 'alertes creees', count(*) from saved_searches
-              union all select 'avis laisses', count(*) from reviews;"
+              union all select 'avis laisses', count(*) from reviews
+              union all select 'messages acheteurs (total)', count(*) from messages
+              union all select 'messages 7 derniers jours', count(*) from messages where created_at >= now() - interval '7 days'
+              union all select 'contacts dates (total)', count(*) from contact_events
+              union all select 'contacts dates aujourd''hui', count(*) from contact_events where created_at >= date_trunc('day', now());"
+            docker compose exec -T db psql -U ferraille -d ferraille -A -F ' | ' -c "select channel, count(*) from contact_events group by 1 order by 2 desc;"
+            docker compose logs --since 3h backend 2>&1 | grep -E " ERROR " | tail -8 | cut -c1-300 | sed -E 's/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+/[email]/g; s/[0-9]{8,}/[num]/g'
             echo "--- Demandes par marque ---"
             docker compose exec -T db psql -U ferraille -d ferraille -A -F ' | ' -c "select make, count(*) from part_requests group by 1 order by 2 desc limit 15;"
             echo "--- Inscriptions par jour ---"
