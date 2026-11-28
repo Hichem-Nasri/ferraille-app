@@ -59,6 +59,12 @@ jobs:
                                  date_trunc('day', now() at time zone 'Africa/Tunis') at time zone 'Africa/Tunis' as d1)
               select 'source: ' || coalesce(nullif(referrer,''),'direct'), count(distinct visitor) from page_visits, b
               where created_at >= d0 and created_at < d1 group by 1 order by 2 desc limit 8;"
+            echo "--- Clics contact par vendeur ---"
+            docker compose exec -T db psql -U ferraille -d ferraille -A -F ' | ' -c "
+              select case when coalesce(u.email,'') like '%@demo.ferraille.tn' then 'DEMO' when u.role = 'ADMIN' then 'ADMIN' else 'REEL' end as type,
+                     coalesce(nullif(u.shop_name,''), u.full_name) as vendeur, sum(l.contact_clicks) as clics, count(*) filter (where l.contact_clicks > 0) as annonces_contactees
+              from listings l join users u on u.id = l.seller_id
+              group by 1, 2 having sum(l.contact_clicks) > 0 order by 3 desc;"
             echo "--- Demandes par marque ---"
             docker compose exec -T db psql -U ferraille -d ferraille -A -F ' | ' -c "select make, count(*) from part_requests group by 1 order by 2 desc limit 15;"
             echo "--- Inscriptions par jour ---"

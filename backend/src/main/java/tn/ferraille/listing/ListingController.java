@@ -71,7 +71,11 @@ public class ListingController {
 
     @PostMapping("/{id:\\d+}/contact")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void contact(@PathVariable Long id, @RequestParam(required = false) String channel) {
+    public void contact(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable Long id,
+                        @RequestParam(required = false) String channel) {
+        if (user != null && ("ADMIN".equals(user.role()) || listingService.isSeller(id, user.id()))) {
+            return;
+        }
         listingService.recordContact(id);
         messageService.recordEvent(id, channel);
     }

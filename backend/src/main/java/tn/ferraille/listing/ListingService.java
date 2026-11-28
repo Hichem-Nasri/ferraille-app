@@ -104,6 +104,10 @@ public class ListingService {
     }
 
     @Transactional
+    public boolean isSeller(Long listingId, Long userId) {
+        return listingRepository.findById(listingId).map(l -> l.getSeller().getId().equals(userId)).orElse(false);
+    }
+
     public void recordContact(Long id) {
         if (listingRepository.existsById(id)) {
             listingRepository.incrementContactClicks(id);
