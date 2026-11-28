@@ -1,0 +1,27 @@
+{
+  "id": 32,
+  "slug": "bloc-megane-2-phase-1",
+  "title": "Bloc Megane 2 phase 1",
+  "description": "Bloc Megane 2 phase 1 ",
+  "price": null,
+  "negotiable": true,
+  "category": "MOTEUR",
+  "condition": "BON",
+  "city": "Tunis",
+  "oemReference": null,
+  "photos": [
+    "/uploads/2026-11/ed692ed7-9b19-48e7-9215-46cb5d8abf4b.jpg",
+    "/uploads/2026-11/a3a9f853-c5ab-4b92-83eb-ef9841a326ec.jpg",
+    "/uploads/2026-11/1c893342-ef6a-4c4c-af55-fa8f9a86a54d.jpg"
+  ],
+  "fits": [
+    {
+      "make": "Renault",
+      "model": "Megane 2 phase 1"
+    }
+  ],
+  "createdAt": "2026-11-24T11:17:59.982942Z",
+  "sellerId": 13,
+  "sellerName": "argoubi auto casse plus",
+  "sellerType": "PARTICULIER"
+}

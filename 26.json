@@ -1,0 +1,34 @@
+{
+  "id": 26,
+  "slug": "i20-2026",
+  "title": "بيع جميع قطاع الغيار i20 2026",
+  "description": "23340782",
+  "price": null,
+  "negotiable": true,
+  "category": "MOTEUR",
+  "condition": "NEUF",
+  "city": "Tunis",
+  "oemReference": "23340782",
+  "photos": [
+    "/uploads/2026-11/6238f017-087e-4c5e-b90c-414bace3cdf2.jpg",
+    "/uploads/2026-11/46685481-572d-40fc-b494-b94dd4fff99f.jpg",
+    "/uploads/2026-11/7e8a8a01-65f6-4ae6-8159-582214e82b85.jpg",
+    "/uploads/2026-11/74d85dc5-6d35-45ad-a98e-4ab530160668.jpg",
+    "/uploads/2026-11/f280419c-a8f4-43df-a3a3-cf32382880d9.jpg",
+    "/uploads/2026-11/e8de3ecb-e842-45b5-976b-343c98c374ee.jpg",
+    "/uploads/2026-11/15a15a48-42ed-42b6-b18b-f775669f53c6.jpg",
+    "/uploads/2026-11/a6886456-5e98-4413-97ca-f57c50226c20.jpg"
+  ],
+  "fits": [
+    {
+      "make": "Hyundai",
+      "model": "I20",
+      "yearFrom": 2026,
+      "yearTo": 2026
+    }
+  ],
+  "createdAt": "2026-11-23T18:49:59.087769Z",
+  "sellerId": 11,
+  "sellerName": "Fahmiabidi",
+  "sellerType": "PARTICULIER"
+}

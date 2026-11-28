@@ -1,0 +1,27 @@
+{
+  "id": 35,
+  "slug": "cremailleur-ford-fiesta",
+  "title": "Cremailleur Ford fiesta",
+  "description": "Garantie 6 moins",
+  "price": 750.000,
+  "negotiable": true,
+  "category": "AUTRE",
+  "condition": "TRES_BON",
+  "city": "Tunis",
+  "oemReference": "Ford",
+  "photos": [
+    "/uploads/2026-11/d0cf8f4b-11cc-433f-b815-4e4f62e952a7.jpg"
+  ],
+  "fits": [
+    {
+      "make": "Ford",
+      "model": "Fiesta",
+      "yearFrom": 2005,
+      "yearTo": 2007
+    }
+  ],
+  "createdAt": "2026-11-26T08:38:40.404677Z",
+  "sellerId": 14,
+  "sellerName": "Majdi belhaj",
+  "sellerType": "PARTICULIER"
+}

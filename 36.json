@@ -1,0 +1,27 @@
+{
+  "id": 36,
+  "slug": "boite-de-vitesse-vw-golf-passat-caddy-1-6-tdi",
+  "title": "Boîte de vitesse vw golf passat caddy 1.6 tdi",
+  "description": null,
+  "price": 900.000,
+  "negotiable": true,
+  "category": "MOTEUR",
+  "condition": "TRES_BON",
+  "city": "Tunis",
+  "oemReference": null,
+  "photos": [
+    "/uploads/2026-11/733bef0f-84fe-4d12-8069-4e7605ec87ff.jpg",
+    "/uploads/2026-11/36f74e31-fcf3-402f-93a0-297fe3e88c48.jpg",
+    "/uploads/2026-11/82ce00bb-1ebf-4813-99dc-c9a62957046a.jpg"
+  ],
+  "fits": [
+    {
+      "make": "Volkswagen",
+      "model": "Golf"
+    }
+  ],
+  "createdAt": "2026-11-26T20:16:57.318449Z",
+  "sellerId": 16,
+  "sellerName": "GRM",
+  "sellerType": "PRO"
+}

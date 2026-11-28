@@ -1,0 +1,28 @@
+{
+  "id": 27,
+  "slug": "voulant-moteur-volkswagen-polo-6",
+  "title": "Voulant moteur Volkswagen Polo 6",
+  "description": "26073643\nTunis zahrouni ",
+  "price": 130.000,
+  "negotiable": true,
+  "category": "MOTEUR",
+  "condition": "TRES_BON",
+  "city": "Tunis",
+  "oemReference": "Volkswagen ",
+  "photos": [
+    "/uploads/2026-11/9986b071-32c9-4853-a070-e9e358760d45.jpg",
+    "/uploads/2026-11/a1f79047-497b-4d1b-9c17-6c5fb8c47a3c.jpg",
+    "/uploads/2026-11/b13e77e8-1322-4243-a68d-08b03f46f160.jpg",
+    "/uploads/2026-11/2ecdd0d9-bd2e-4639-8d77-0e055687e766.jpg"
+  ],
+  "fits": [
+    {
+      "make": "Volkswagen",
+      "model": "Polo 6"
+    }
+  ],
+  "createdAt": "2026-11-23T21:09:33.516366Z",
+  "sellerId": 12,
+  "sellerName": "Hamza",
+  "sellerType": "PARTICULIER"
+}

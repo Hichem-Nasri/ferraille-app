@@ -1,0 +1,29 @@
+{
+  "id": 34,
+  "slug": "a-vendre-moteur-i20",
+  "title": "A vendre moteur i20",
+  "description": null,
+  "price": null,
+  "negotiable": true,
+  "category": "MOTEUR",
+  "condition": "TRES_BON",
+  "city": "Tunis",
+  "oemReference": null,
+  "photos": [
+    "/uploads/2026-11/32d48a5e-21f6-4694-bff2-d87d7a7720f8.jpg",
+    "/uploads/2026-11/fd685893-9886-4be6-a7b0-f6488b7b4386.jpg",
+    "/uploads/2026-11/1edb4e7e-bfb2-41a0-868f-730dface7d29.jpg"
+  ],
+  "fits": [
+    {
+      "make": "Hyundai",
+      "model": "I20",
+      "yearFrom": 2026,
+      "yearTo": 2026
+    }
+  ],
+  "createdAt": "2026-11-25T11:08:46.912196Z",
+  "sellerId": 9,
+  "sellerName": "Fahmiabidi",
+  "sellerType": "PARTICULIER"
+}
