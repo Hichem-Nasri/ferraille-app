@@ -42,6 +42,23 @@ jobs:
               union all select 'contacts dates aujourd''hui', count(*) from contact_events where created_at >= date_trunc('day', now());"
             docker compose exec -T db psql -U ferraille -d ferraille -A -F ' | ' -c "select channel, count(*) from contact_events group by 1 order by 2 desc;"
             docker compose logs --since 3h backend 2>&1 | grep -E " ERROR " | tail -8 | cut -c1-300 | sed -E 's/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+/[email]/g; s/[0-9]{8,}/[num]/g'
+            echo "--- Hier (heure de Tunis) ---"
+            docker compose exec -T db psql -U ferraille -d ferraille -A -F ' | ' -c "
+              with b as (select (date_trunc('day', now() at time zone 'Africa/Tunis') - interval '1 day') at time zone 'Africa/Tunis' as d0,
+                                 date_trunc('day', now() at time zone 'Africa/Tunis') at time zone 'Africa/Tunis' as d1)
+              select 'visiteurs', count(distinct visitor) from page_visits, b where created_at >= d0 and created_at < d1
+              union all select 'pages vues', count(*) from page_visits, b where created_at >= d0 and created_at < d1
+              union all select 'visiteurs fiches pieces', count(distinct visitor) from page_visits, b where created_at >= d0 and created_at < d1 and path like '/piece/%'
+              union all select 'inscriptions', count(*) from users, b where created_at >= d0 and created_at < d1 and role <> 'ADMIN'
+              union all select 'annonces publiees', count(*) from listings, b where created_at >= d0 and created_at < d1
+              union all select 'demandes de pieces', count(*) from part_requests, b where created_at >= d0 and created_at < d1
+              union all select 'contacts (clics + messages)', count(*) from contact_events, b where created_at >= d0 and created_at < d1
+              union all select 'messages acheteurs', count(*) from messages, b where created_at >= d0 and created_at < d1;"
+            docker compose exec -T db psql -U ferraille -d ferraille -A -F ' | ' -c "
+              with b as (select (date_trunc('day', now() at time zone 'Africa/Tunis') - interval '1 day') at time zone 'Africa/Tunis' as d0,
+                                 date_trunc('day', now() at time zone 'Africa/Tunis') at time zone 'Africa/Tunis' as d1)
+              select 'source: ' || coalesce(nullif(referrer,''),'direct'), count(distinct visitor) from page_visits, b
+              where created_at >= d0 and created_at < d1 group by 1 order by 2 desc limit 8;"
             echo "--- Demandes par marque ---"
             docker compose exec -T db psql -U ferraille -d ferraille -A -F ' | ' -c "select make, count(*) from part_requests group by 1 order by 2 desc limit 15;"
             echo "--- Inscriptions par jour ---"
